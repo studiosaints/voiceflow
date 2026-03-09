@@ -37,6 +37,23 @@
 </head>
 <body class="bg-zinc-950 text-zinc-200 h-screen overflow-hidden">
 
+    <!-- PIN Lock -->
+    <div id="pin-lock" class="fixed inset-0 bg-zinc-950 z-[9999] flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-14 h-14 rounded-2xl bg-purple-600/10 flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-lock text-2xl text-purple-400"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-white mb-1">VoiceFlow</h2>
+            <p id="pin-subtitle" class="text-xs text-zinc-500 mb-6">Enter PIN to continue</p>
+            <input id="pin-input" type="password" placeholder="PIN" autofocus
+                   class="w-48 text-center tracking-widest bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                   onkeydown="if(event.key==='Enter')unlockApp()">
+            <br>
+            <button onclick="unlockApp()" class="mt-3 bg-white text-black font-semibold px-8 py-2 rounded-xl text-sm hover:bg-zinc-200 transition-colors">UNLOCK</button>
+            <p id="pin-error" class="hidden text-red-400 text-xs mt-3">Wrong PIN</p>
+        </div>
+    </div>
+
     <!-- ═══ START SCREEN ═══ -->
     <div id="start-screen" class="h-screen flex">
         <div onclick="startOutbound()" class="start-half w-1/2 flex flex-col items-center justify-center cursor-pointer border-r border-zinc-800/50">
@@ -390,16 +407,6 @@
             </div>
             <div class="p-6 space-y-6">
                 <div>
-                    <div class="flex items-center gap-x-3 mb-2">
-                        <div class="w-5 h-5 bg-purple-500/10 text-purple-400 rounded-lg flex items-center justify-center"><i class="fas fa-lock text-xs"></i></div>
-                        <p class="text-sm font-medium">Access PIN</p>
-                    </div>
-                    <div class="key-input-wrap">
-                        <input id="access-pin" type="password" placeholder="Your PIN" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
-                        <button type="button" class="toggle-vis" onclick="toggleKeyVis('access-pin', this)"><i class="fas fa-eye"></i></button>
-                    </div>
-                </div>
-                <div>
                     <div class="flex items-center justify-between mb-2">
                         <p class="text-sm font-medium">Summary Instructions</p>
                         <button onclick="resetPrompt()" class="text-[10px] text-zinc-500 hover:text-zinc-300">Reset</button>
@@ -718,16 +725,31 @@ Write in English even if the call was in Spanish.`;
             return labels[checked.value] || null;
         }
 
+        // ═══ PIN AUTH ═══
+        function unlockApp() {
+            const pin = document.getElementById('pin-input').value.trim();
+            if (!pin) return;
+            const stored = localStorage.getItem('access_pin');
+            if (stored && pin === stored) {
+                ACCESS_PIN = pin;
+                document.getElementById('pin-lock').classList.add('hidden');
+            } else if (!stored) {
+                ACCESS_PIN = pin;
+                localStorage.setItem('access_pin', pin);
+                document.getElementById('pin-lock').classList.add('hidden');
+            } else {
+                document.getElementById('pin-error').classList.remove('hidden');
+                document.getElementById('pin-input').value = '';
+                setTimeout(() => document.getElementById('pin-error').classList.add('hidden'), 2000);
+            }
+        }
+
         // ═══ SETTINGS ═══
         function openSettings() {
             document.getElementById('settings-modal').classList.remove('hidden');
-            document.getElementById('access-pin').value = ACCESS_PIN;
         }
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveKeys() {
-            const p = document.getElementById('access-pin').value.trim();
-            if (p) ACCESS_PIN = p;
-            localStorage.setItem('access_pin', ACCESS_PIN);
             closeSettings();
             showToast('Settings saved!');
         }
@@ -1726,8 +1748,10 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
-            if (!ACCESS_PIN) {
-                setTimeout(() => { showToast('Enter your PIN to get started'); openSettings(); }, 800);
+            if (ACCESS_PIN) {
+                document.getElementById('pin-lock').classList.add('hidden');
+            } else if (!localStorage.getItem('access_pin')) {
+                document.getElementById('pin-subtitle').textContent = 'Choose a PIN (first time setup)';
             }
         };
     </script>
