@@ -391,17 +391,6 @@
             <div class="p-6 space-y-6">
                 <div>
                     <div class="flex items-center gap-x-3 mb-2">
-                        <div class="w-5 h-5 bg-emerald-500/10 text-emerald-400 rounded-lg flex items-center justify-center"><i class="fas fa-bolt text-xs"></i></div>
-                        <p class="text-sm font-medium">Groq (Whisper Turbo)</p>
-                    </div>
-                    <div class="key-input-wrap">
-                        <input id="groq-key" type="password" placeholder="gsk_..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
-                        <button type="button" class="toggle-vis" onclick="toggleKeyVis('groq-key', this)"><i class="fas fa-eye"></i></button>
-                    </div>
-                    <div class="text-[10px] text-zinc-500 mt-1">Free at <a href="https://console.groq.com/keys" target="_blank" class="underline">console.groq.com</a></div>
-                </div>
-                <div>
-                    <div class="flex items-center gap-x-3 mb-2">
                         <div class="w-5 h-5 bg-purple-500/10 text-purple-400 rounded-lg flex items-center justify-center"><i class="fas fa-lock text-xs"></i></div>
                         <p class="text-sm font-medium">Access PIN</p>
                     </div>
@@ -409,18 +398,6 @@
                         <input id="access-pin" type="password" placeholder="Your PIN" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
                         <button type="button" class="toggle-vis" onclick="toggleKeyVis('access-pin', this)"><i class="fas fa-eye"></i></button>
                     </div>
-                    <div class="text-[10px] text-zinc-500 mt-1">Unlocks Grok features</div>
-                </div>
-                <div>
-                    <div class="flex items-center gap-x-3 mb-2">
-                        <div class="w-5 h-5 bg-purple-500/10 text-purple-400 rounded-lg flex items-center justify-center"><i class="fas fa-robot text-xs"></i></div>
-                        <p class="text-sm font-medium">xAI Key <span class="text-zinc-600 text-[10px] font-normal">(optional override)</span></p>
-                    </div>
-                    <div class="key-input-wrap">
-                        <input id="xai-key" type="password" placeholder="xai-..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
-                        <button type="button" class="toggle-vis" onclick="toggleKeyVis('xai-key', this)"><i class="fas fa-eye"></i></button>
-                    </div>
-                    <div class="text-[10px] text-zinc-500 mt-1">Only if you want to use a different key than the default</div>
                 </div>
                 <div>
                     <div class="flex items-center justify-between mb-2">
@@ -434,7 +411,6 @@
             <div class="px-6 py-4 border-t border-zinc-800 space-y-3">
                 <div class="flex gap-x-3">
                 <button onclick="saveKeys()" class="flex-1 bg-white text-black font-semibold py-2.5 rounded-2xl text-sm hover:bg-zinc-100">SAVE</button>
-                <button onclick="testKeys()" class="flex-1 border border-zinc-700 font-medium py-2.5 rounded-2xl text-sm hover:bg-zinc-800">TEST</button>
                 </div>
             </div>
         </div>
@@ -444,9 +420,7 @@
 
     <script>
         // ═══ CONFIG ═══
-        const XAI_PROXY = localStorage.getItem('xai_proxy') || 'https://voiceflow-proxy.edoardosanti.workers.dev';
-        let GROQ_KEY = localStorage.getItem('groq_key') || '';
-        let XAI_KEY = localStorage.getItem('xai_key') || '';
+        const XAI_PROXY = 'https://voiceflow-proxy.edoardosanti.workers.dev';
         let ACCESS_PIN = localStorage.getItem('access_pin') || '';
 
         const DEFAULT_PROMPT = `Summarize this call for CRM notes. Edoardo is a sales rep at Vermeer Southeast (large machinery, long sales cycles). He works from the office in GA.
@@ -747,36 +721,15 @@ Write in English even if the call was in Spanish.`;
         // ═══ SETTINGS ═══
         function openSettings() {
             document.getElementById('settings-modal').classList.remove('hidden');
-            document.getElementById('groq-key').value = GROQ_KEY;
             document.getElementById('access-pin').value = ACCESS_PIN;
-            document.getElementById('xai-key').value = XAI_KEY;
         }
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveKeys() {
-            const g = document.getElementById('groq-key').value.trim();
             const p = document.getElementById('access-pin').value.trim();
-            const x = document.getElementById('xai-key').value.trim();
-            if (g) GROQ_KEY = g;
             if (p) ACCESS_PIN = p;
-            XAI_KEY = x;
-            localStorage.setItem('groq_key', GROQ_KEY);
             localStorage.setItem('access_pin', ACCESS_PIN);
-            localStorage.setItem('xai_key', XAI_KEY);
             closeSettings();
             showToast('Settings saved!');
-        }
-        async function testKeys() {
-            const groqTest = document.getElementById('groq-key').value.trim() || GROQ_KEY;
-            if (!groqTest) { showToast('Enter Groq key first'); return; }
-            try {
-                const form = new FormData();
-                form.append('file', new Blob(['test']), 'test.webm');
-                form.append('model', 'whisper-large-v3');
-                const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-                    method:'POST', headers:{'Authorization':`Bearer ${groqTest}`}, body:form
-                });
-                showToast(res.ok ? 'Groq key is valid!' : `Groq error: ${res.status}`);
-            } catch(e) { showToast('Connection failed'); }
         }
         function toggleKeyVis(inputId, btn) {
             const inp = document.getElementById(inputId);
@@ -788,7 +741,7 @@ Write in English even if the call was in Spanish.`;
         // ═══ TRANSCRIPTION ═══
         async function startTranscription() {
             if (!currentAudio) return;
-            if (!GROQ_KEY) { alert('Set your Groq key in Settings'); openSettings(); return; }
+            if (!ACCESS_PIN) { alert('Set your PIN in Settings'); openSettings(); return; }
             const btn = document.getElementById('transcribe-btn');
             btn.disabled = true;
             document.getElementById('transcribe-text').textContent = 'TRANSCRIBING...';
@@ -823,8 +776,8 @@ Write in English even if the call was in Spanish.`;
             form.append('response_format', 'verbose_json');
             form.append('language', currentLanguage);
             form.append('prompt', 'Morbark, VIO, Vermeer, chipper, stump grinder, BC1500, BC1800, SC70TX, WC2300, Bobcat, skid steer, tree service, CRM, Edoardo');
-            const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-                method:'POST', headers:{'Authorization':`Bearer ${GROQ_KEY}`}, body:form
+            const res = await fetch(XAI_PROXY + '/groq/audio/transcriptions', {
+                method:'POST', headers:{'X-Pin': ACCESS_PIN}, body:form
             });
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
@@ -1537,7 +1490,7 @@ Keep the whole output practical and immediately usable.`;
             const prompt = buildGamePlanPrompt(clientNotes);
             const res = await fetch(XAI_PROXY + '/xai/responses', {
                 method: 'POST',
-                headers: { 'Content-Type':'application/json', 'X-Pin': ACCESS_PIN, ...(XAI_KEY ? {'Authorization':`Bearer ${XAI_KEY}`} : {}) },
+                headers: { 'Content-Type':'application/json', 'X-Pin': ACCESS_PIN },
                 body: JSON.stringify({ model:'grok-4-1-fast-reasoning', input:[{role:'user',content:prompt}], tools:[{type:'web_search'}], temperature:0.7, store:false })
             });
             if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(`xAI error (${res.status}): ${e.error?.message || res.statusText}`); }
@@ -1633,7 +1586,7 @@ Just the date, nothing else. e.g. "3/3/26" or "5/20/26"]`;
             const prompt = `${instructions}${titleInstruction}\n${context}${crmContext}${gamePlanCtx}\nTranscript:\n${text}`;
             const res = await fetch(XAI_PROXY + '/xai/chat/completions', {
                 method:'POST',
-                headers:{'Content-Type':'application/json','X-Pin': ACCESS_PIN, ...(XAI_KEY ? {'Authorization':`Bearer ${XAI_KEY}`} : {})},
+                headers:{'Content-Type':'application/json','X-Pin': ACCESS_PIN},
                 body: JSON.stringify({ model:"grok-4-1-fast-reasoning", messages:[{role:"user",content:prompt}], temperature:0.3, max_tokens:800 })
             });
             if (!res.ok) throw new Error('Grok API error: ' + res.status);
@@ -1695,7 +1648,7 @@ After the three improvements, only if he asked a genuinely sharp question (one t
 Plain text only. No markdown, no asterisks, no bullet symbols.`;
             const res = await fetch(XAI_PROXY + '/xai/chat/completions', {
                 method:'POST',
-                headers:{'Content-Type':'application/json','X-Pin': ACCESS_PIN, ...(XAI_KEY ? {'Authorization':`Bearer ${XAI_KEY}`} : {})},
+                headers:{'Content-Type':'application/json','X-Pin': ACCESS_PIN},
                 body: JSON.stringify({ model:"grok-4-1-fast-reasoning", messages:[{role:"user",content:prompt}], temperature:0.4, max_tokens:700 })
             });
             if (!res.ok) throw new Error('Coaching API error: ' + res.status);
@@ -1773,8 +1726,8 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
-            if (!GROQ_KEY || GROQ_KEY.length < 10 || !ACCESS_PIN) {
-                setTimeout(() => { showToast('Set your settings to get started'); openSettings(); }, 800);
+            if (!ACCESS_PIN) {
+                setTimeout(() => { showToast('Enter your PIN to get started'); openSettings(); }, 800);
             }
         };
     </script>
