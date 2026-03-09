@@ -409,10 +409,7 @@
                         <input id="access-pin" type="password" placeholder="Your PIN" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
                         <button type="button" class="toggle-vis" onclick="toggleKeyVis('access-pin', this)"><i class="fas fa-eye"></i></button>
                     </div>
-                    <div class="flex items-center justify-between mt-1">
-                        <div class="text-[10px] text-zinc-500">Unlocks Grok features</div>
-                        <button id="touchid-btn" onclick="setupTouchID()" class="hidden text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors"><i class="fas fa-fingerprint mr-1"></i>Enable Touch ID</button>
-                    </div>
+                    <div class="text-[10px] text-zinc-500 mt-1">Unlocks Grok features</div>
                 </div>
                 <div>
                     <div class="flex items-center gap-x-3 mb-2">
@@ -435,9 +432,6 @@
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-zinc-800 space-y-3">
-                <button id="touchid-unlock-btn" onclick="unlockWithTouchID()" class="hidden w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-2.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors">
-                    <i class="fas fa-fingerprint"></i> UNLOCK WITH TOUCH ID
-                </button>
                 <div class="flex gap-x-3">
                 <button onclick="saveKeys()" class="flex-1 bg-white text-black font-semibold py-2.5 rounded-2xl text-sm hover:bg-zinc-100">SAVE</button>
                 <button onclick="testKeys()" class="flex-1 border border-zinc-700 font-medium py-2.5 rounded-2xl text-sm hover:bg-zinc-800">TEST</button>
@@ -756,11 +750,6 @@ Write in English even if the call was in Spanish.`;
             document.getElementById('groq-key').value = GROQ_KEY;
             document.getElementById('access-pin').value = ACCESS_PIN;
             document.getElementById('xai-key').value = XAI_KEY;
-            if (window.PublicKeyCredential) {
-                document.getElementById('touchid-btn').classList.remove('hidden');
-                if (!ACCESS_PIN || !GROQ_KEY) document.getElementById('touchid-unlock-btn').classList.remove('hidden');
-                else document.getElementById('touchid-unlock-btn').classList.add('hidden');
-            }
         }
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveKeys() {
@@ -789,75 +778,6 @@ Write in English even if the call was in Spanish.`;
                 showToast(res.ok ? 'Groq key is valid!' : `Groq error: ${res.status}`);
             } catch(e) { showToast('Connection failed'); }
         }
-        // ═══ TOUCH ID (WebAuthn) ═══
-        async function setupTouchID() {
-            const pin = document.getElementById('access-pin').value.trim() || ACCESS_PIN;
-            const groq = document.getElementById('groq-key').value.trim() || GROQ_KEY;
-            if (!pin) { showToast('Enter a PIN first'); return; }
-            if (!groq) { showToast('Enter your Groq key first'); return; }
-            if (!window.PublicKeyCredential) { showToast('Touch ID not supported on this device'); return; }
-            const payload = JSON.stringify({ pin, groq });
-            try {
-                await navigator.credentials.create({
-                    publicKey: {
-                        challenge: crypto.getRandomValues(new Uint8Array(32)),
-                        rp: { name: 'VoiceFlow', id: location.hostname },
-                        user: {
-                            id: new TextEncoder().encode(payload),
-                            name: 'voiceflow-user',
-                            displayName: 'VoiceFlow'
-                        },
-                        pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
-                        authenticatorSelection: {
-                            authenticatorAttachment: 'platform',
-                            residentKey: 'required',
-                            requireResidentKey: true,
-                            userVerification: 'required'
-                        },
-                        timeout: 60000
-                    }
-                });
-                showToast('Touch ID enabled!');
-            } catch (e) {
-                console.log('Touch ID setup skipped:', e.message);
-                showToast('Touch ID setup cancelled');
-            }
-        }
-
-        async function tryTouchID() {
-            if (!window.PublicKeyCredential) return null;
-            try {
-                const assertion = await navigator.credentials.get({
-                    publicKey: {
-                        challenge: crypto.getRandomValues(new Uint8Array(32)),
-                        rpId: location.hostname,
-                        userVerification: 'required',
-                        timeout: 60000
-                    }
-                });
-                if (assertion.response.userHandle) {
-                    const raw = new TextDecoder().decode(assertion.response.userHandle);
-                    try { return JSON.parse(raw); } catch { return { pin: raw }; }
-                }
-            } catch (e) {
-                console.log('Touch ID auth skipped:', e.message);
-            }
-            return null;
-        }
-
-        async function unlockWithTouchID() {
-            const creds = await tryTouchID();
-            if (creds) {
-                if (creds.pin) { ACCESS_PIN = creds.pin; localStorage.setItem('access_pin', ACCESS_PIN); document.getElementById('access-pin').value = ACCESS_PIN; }
-                if (creds.groq) { GROQ_KEY = creds.groq; localStorage.setItem('groq_key', GROQ_KEY); document.getElementById('groq-key').value = GROQ_KEY; }
-                showToast('Unlocked with Touch ID');
-                document.getElementById('touchid-unlock-btn').classList.add('hidden');
-                closeSettings();
-            } else {
-                showToast('Touch ID failed — enter manually');
-            }
-        }
-
         function toggleKeyVis(inputId, btn) {
             const inp = document.getElementById(inputId);
             const isP = inp.type === 'password';
