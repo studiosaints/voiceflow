@@ -261,11 +261,38 @@
 
                             <!-- Two-column body -->
                             <div class="flex flex-1 min-h-0">
-                                <!-- LEFT: Context, Intel, Quick Text -->
-                                <div class="w-[30%] border-r border-zinc-800/60 p-4 overflow-auto transcript-scroll space-y-3 flex-shrink-0">
-                                    <div id="gp-context-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3">
-                                        <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Context</div>
-                                        <div id="gp-context" class="text-[12px] text-zinc-300 leading-relaxed"></div>
+                                <!-- LEFT: Account Snapshot, Intel, Quick Text -->
+                                <div class="w-[32%] border-r border-zinc-800/60 p-4 overflow-auto transcript-scroll space-y-3 flex-shrink-0">
+                                    <!-- Account Snapshot Card -->
+                                    <div id="gp-snapshot-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3 space-y-2.5">
+                                        <div id="gp-snap-company" class="flex items-center gap-2">
+                                            <i class="fa-solid fa-building text-zinc-500 text-[11px] w-4 text-center"></i>
+                                            <span class="text-[13px] font-semibold text-white truncate"></span>
+                                        </div>
+                                        <div id="gp-snap-contact" class="flex items-center gap-2">
+                                            <i class="fa-solid fa-user text-zinc-500 text-[11px] w-4 text-center"></i>
+                                            <span class="text-[12px] text-zinc-300"></span>
+                                        </div>
+                                        <div id="gp-snap-industry" class="flex items-center gap-2">
+                                            <i class="fa-solid fa-tree text-zinc-500 text-[11px] w-4 text-center"></i>
+                                            <span class="text-[12px] text-zinc-400"></span>
+                                        </div>
+                                        <div class="border-t border-zinc-800/60 pt-2">
+                                            <div class="flex items-start gap-2">
+                                                <i class="fa-solid fa-message text-zinc-500 text-[11px] w-4 text-center mt-[2px]"></i>
+                                                <span id="gp-snap-comms" class="text-[11.5px] text-zinc-400 leading-relaxed"></span>
+                                            </div>
+                                        </div>
+                                        <div id="gp-snap-opps" class="flex items-center gap-2">
+                                            <i class="fa-solid fa-handshake text-zinc-500 text-[11px] w-4 text-center"></i>
+                                            <span class="text-[12px] text-zinc-400"></span>
+                                        </div>
+                                        <div class="border-t border-zinc-800/60 pt-2">
+                                            <div class="flex items-start gap-2">
+                                                <i class="fa-solid fa-bullseye text-emerald-500 text-[11px] w-4 text-center mt-[2px]"></i>
+                                                <span id="gp-snap-task" class="text-[12px] text-emerald-300 leading-relaxed font-medium"></span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div id="gp-intel-wrap" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3">
                                         <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Intel</div>
@@ -1132,7 +1159,7 @@ Write in English even if the call was in Spanish.`;
 
         function parseSections(text) {
             const sections = {};
-            const sectionRegex = /^(CONTEXT|OBJECTIVE|INTEL|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS|NEXT STEPS|CLOSE|OPENING APPROACH|OPENER)\s*:/gim;
+            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS|NEXT STEPS|CLOSE|OPENING APPROACH|OPENER)\s*:/gim;
             const keys = [];
             const positions = [];
             let m;
@@ -1192,6 +1219,16 @@ Write in English even if the call was in Spanish.`;
             }).join('');
         }
 
+        function formatOpps(raw) {
+            const lower = raw.toLowerCase();
+            if (lower === 'none' || lower === '0' || !raw) return '<span class="text-zinc-600">None</span>';
+            let html = raw;
+            html = html.replace(/(\d+)\s*won/gi, '<span class="text-amber-400">$1 won \u{1F451}</span>');
+            html = html.replace(/(\d+)\s*open/gi, '<span class="text-emerald-400">$1 open \u{1F4CD}</span>');
+            html = html.replace(/(\d+)\s*lost/gi, '<span class="text-zinc-500">$1 lost</span>');
+            return html;
+        }
+
         function renderGamePlanText(text) {
             const sections = parseSections(text);
 
@@ -1215,9 +1252,21 @@ Write in English even if the call was in Spanish.`;
                 verbEl.className = 'hidden';
             }
 
-            // Context
-            const ctxText = sections['CONTEXT'] || '';
-            document.getElementById('gp-context').innerHTML = renderBullets(ctxText, 'bg-zinc-500');
+            // Account Snapshot
+            const snapRaw = sections['ACCOUNT SNAPSHOT'] || sections['CONTEXT'] || '';
+            const snapFields = {};
+            for (const key of ['COMPANY','CONTACT','INDUSTRY','COMMS','OPPORTUNITIES','MY TASK']) {
+                const re = new RegExp(key + '\\s*:\\s*(.+)', 'i');
+                const m = snapRaw.match(re);
+                snapFields[key] = m ? m[1].trim() : '';
+            }
+            document.querySelector('#gp-snap-company span').textContent = snapFields['COMPANY'] || 'Unknown';
+            document.querySelector('#gp-snap-contact span').textContent = snapFields['CONTACT'] || 'Unknown';
+            document.querySelector('#gp-snap-industry span').textContent = snapFields['INDUSTRY'] || '—';
+            document.getElementById('gp-snap-comms').textContent = snapFields['COMMS'] || 'No comms history available.';
+            const oppsRaw = snapFields['OPPORTUNITIES'] || 'None';
+            document.querySelector('#gp-snap-opps span').innerHTML = formatOpps(oppsRaw);
+            document.getElementById('gp-snap-task').textContent = snapFields['MY TASK'] || '—';
 
             // Intel — always show
             const intelText = sections['INTEL'] || '';
@@ -1419,8 +1468,13 @@ Write in plain text only (no markdown, no asterisks, no bold).
 Keep it concise, high-signal, and natural.
 
 Format:
-CONTEXT:
-- 3-5 bullets covering the full account reality based ONLY on the CRM data. Include deal stage, active signals, risks, open opportunities, AND communication history. For comms: what was the last interaction, who reached out, what was said or promised, how long ago, whether the client has been responsive or going dark. Be specific and concrete. Examples: "Last talked Nov 3rd — he mentioned needing a service check, you promised to follow up with pricing." / "You've texted twice and left 3 VMs in the last 4 months with no response." / "Jose called in about a service issue — you took the call and said you'd check with the service team." Do NOT include web search findings here — that goes in INTEL.
+ACCOUNT SNAPSHOT:
+COMPANY: The company/account name exactly as it appears in CRM.
+CONTACT: The primary person's name followed by their phone number (owner, decision maker). If unknown, write "Unknown".
+INDUSTRY: Their line of work in a few words. e.g. "Tree service & landscaping" or "Land clearing" or "General contractor". Infer from CRM notes, equipment interest, or business name.
+COMMS: One plain-English sentence summarizing the communication pattern. Be specific and human. Examples: "Talked directly with Raul last month — he mentioned needing a service check, you promised to follow up with pricing." / "You've texted twice and left 3 VMs in the last 4 months with no response — he's gone dark." / "Jose called in about a service issue — you took the call and said you'd check with the service team." / "First real contact — initial outreach, never spoken before."
+OPPORTUNITIES: Summarize open/won/lost counts from CRM. e.g. "1 open, 0 won, 0 lost" or "0 open, 2 won, 1 lost" or "None".
+MY TASK: One concrete sentence about what Edoardo should do on this call. e.g. "Get him to commit to coming in to see the SC70TX this week." or "Call and delete if no answer — this lead is dead." or "Offer a demo and find out what he's running." or "Ask about needs for this year and reopen the conversation."
 
 OBJECTIVE:
 - Start with one of these action verbs based on where the account actually is: CLOSE (ready to buy, just needs the push), ADVANCE (interested but needs to move to next stage), RECOVER (went cold or stalled, re-engage), DISCOVER (new or unclear needs, find out what they want), UNCOVER (there's something under the surface, dig deeper), NURTURE (nothing active, stay top of mind and add value), REACTIVATE (haven't talked in a long time, restart the relationship)
@@ -1528,9 +1582,9 @@ Keep the whole output practical and immediately usable.`;
             fullResponse = fullResponse.replace(/^::(?:CALL|TEXT)::\s*/im, '');
             fullResponse = fullResponse.replace(/\[\[\d+\]\]/g,'').replace(/\[(\d+)\]/g,'').replace(/\(https?:\/\/\S+?\)/g,'').replace(/\([\s,]*\)/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/\n{3,}/g,'\n\n').trim();
             let gamePlan = fullResponse;
-            const sectionHeaders = /\b(CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE)\s*:/gi;
+            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE)\s*:/gi;
             gamePlan = gamePlan.replace(sectionHeaders, '\n\n$1:');
-            gamePlan = gamePlan.replace(/(CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE):\s*/gi, '$1:\n');
+            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE):\s*/gi, '$1:\n');
             gamePlan = gamePlan.replace(/\s+-\s+/g, '\n- ');
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();
             let textMessage = '';
