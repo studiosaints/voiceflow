@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voiceflow • Fast Transcribe • CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .logo-font { font-family: 'Space Grotesk', sans-serif; }
+        .transcript-scroll { scrollbar-width: thin; scrollbar-color: rgb(63 63 70) transparent; }
+        .transcript-scroll::-webkit-scrollbar { width: 6px; }
+        .transcript-scroll::-webkit-scrollbar-thumb { background: rgb(63 63 70); border-radius: 20px; }
+        .mic-pulse { animation: micPulse 1.5s infinite ease-in-out; }
+        @keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+        @keyframes toastIn { from{opacity:0;transform:translate(-50%,12px)} to{opacity:1;transform:translate(-50%,0)} }
+        @keyframes toastOut { from{opacity:1;transform:translate(-50%,0)} to{opacity:0;transform:translate(-50%,12px)} }
+        .toast-enter { animation: toastIn 0.3s ease-out forwards; }
+        .toast-exit { animation: toastOut 0.25s ease-in forwards; }
+        audio::-webkit-media-controls-panel { background:#18181b; border-radius:12px; }
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display { color:#a1a1aa; font-size:11px; }
+        .key-input-wrap { position:relative; }
+        .key-input-wrap .toggle-vis { position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#71717a;cursor:pointer;font-size:13px; }
+        .key-input-wrap .toggle-vis:hover { color:#e4e4e7; }
+        [contenteditable][data-placeholder]:empty::before { content:attr(data-placeholder);color:#52525b;pointer-events:none; }
+        .start-half { transition: background 0.3s ease; }
+        .start-half:hover { background: rgba(39,39,42,0.4); }
+        .crumb { padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:500;cursor:pointer;transition:all 0.15s ease;white-space:nowrap;user-select:none; }
+        .crumb.active { background:rgba(255,255,255,0.08);color:white; }
+        .crumb.inactive { color:rgb(113 113 122); }
+        .crumb.inactive:hover { color:rgb(161 161 170); }
+        .nav-arrow:disabled { opacity:0.15;cursor:not-allowed; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 h-screen overflow-hidden">
+
+    <!-- ═══ START SCREEN ═══ -->
+    <div id="start-screen" class="h-screen flex">
+        <div onclick="startOutbound()" class="start-half w-1/2 flex flex-col items-center justify-center cursor-pointer border-r border-zinc-800/50">
+            <div class="w-20 h-20 bg-purple-500/10 rounded-3xl flex items-center justify-center mb-6 transition-transform hover:scale-105">
+                <i class="fas fa-phone-alt text-3xl text-purple-400"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-white mb-2 tracking-tight">Outbound</h2>
+            <p class="text-zinc-500 text-sm">I'm calling them</p>
+            <p class="text-zinc-600 text-xs mt-3 max-w-[220px] text-center leading-relaxed">Paste CRM notes &rarr; Game plan &rarr; Call &rarr; Summary</p>
+        </div>
+        <div onclick="startInbound()" class="start-half w-1/2 flex flex-col items-center justify-center cursor-pointer">
+            <div class="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-6 transition-transform hover:scale-105">
+                <i class="fas fa-phone-volume text-3xl text-emerald-400"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-white mb-2 tracking-tight">Inbound</h2>
+            <p class="text-zinc-500 text-sm">They're calling me / walking in</p>
+            <p class="text-zinc-600 text-xs mt-3 max-w-[220px] text-center leading-relaxed">Record &rarr; Summary &rarr; Coach</p>
+        </div>
+    </div>
+
+    <!-- ═══ MAIN APP ═══ -->
+    <div id="main-app" class="hidden h-screen flex flex-col">
+        <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg flex-shrink-0">
+            <div class="px-6 py-2 flex items-center justify-between">
+                <div class="flex items-center gap-x-3 cursor-pointer" onclick="backToStart()">
+                    <div id="header-logo" class="w-7 h-7 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-bolt text-white text-sm"></i>
+                    </div>
+                    <span id="header-title" class="logo-font text-lg font-semibold tracking-tighter text-emerald-400">voiceflow</span>
+                </div>
+                <div id="panel-nav-crumbs" class="flex items-center gap-1"></div>
+                <div class="flex items-center gap-x-3">
+                    <button onclick="openSettings()" class="flex items-center gap-x-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-xl transition-colors">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                    <div onclick="clearAll()" class="flex items-center gap-x-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-xl cursor-pointer transition-colors">
+                        <i class="fas fa-redo"></i> New
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-1 min-h-0">
+            <!-- ═══ SIDEBAR ═══ -->
+            <div id="sidebar" class="w-72 border-r border-zinc-800 bg-zinc-900 p-4 flex flex-col">
+                <div id="mode-indicator" class="mb-4 text-center">
+                    <span id="mode-label" class="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-400">INBOUND</span>
+                </div>
+
+                <div id="record-zone" onclick="toggleRecording()"
+                     class="record-zone border-2 border-dashed border-zinc-700 rounded-2xl p-4 text-center cursor-pointer hover:border-emerald-500 group transition-colors mb-4">
+                    <div id="record-content" class="mx-auto w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <i id="mic-icon" class="fas fa-microphone text-xl text-emerald-400"></i>
+                    </div>
+                    <p id="record-text" class="text-sm font-medium text-zinc-300 mb-0.5">Record</p>
+                    <p id="record-sub" class="text-xs text-zinc-500">Click or press <kbd class="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">R</kbd></p>
+                </div>
+
+                <div id="audio-info" class="hidden mb-4 bg-zinc-950 border border-zinc-800 rounded-2xl p-3">
+                    <div class="flex items-center gap-x-3">
+                        <div id="audio-icon" class="w-8 h-8 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-file-audio text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p id="audio-name" class="font-medium text-xs truncate"></p>
+                            <p id="audio-size" class="text-[10px] text-zinc-500"></p>
+                        </div>
+                        <div class="flex gap-x-2">
+                            <button onclick="playAudio()" class="text-zinc-500 hover:text-white transition-colors"><i class="fas fa-play text-xs"></i></button>
+                            <button onclick="removeAudio()" class="text-zinc-500 hover:text-red-400 transition-colors"><i class="fas fa-times text-xs"></i></button>
+                        </div>
+                    </div>
+                    <audio id="audio-player" controls class="w-full mt-2 hidden"></audio>
+                </div>
+
+                <div id="lang-section" class="flex items-center justify-center mb-4">
+                    <div class="relative inline-flex items-center bg-zinc-800/50 rounded-full p-0.5 border border-zinc-700/50">
+                        <button id="lang-eng-btn" onclick="setLanguage('en')" class="px-3 py-1.5 text-[10px] font-bold rounded-full transition-all text-zinc-400 flex items-center gap-1">🇺🇸 ENG</button>
+                        <button id="lang-spa-btn" onclick="setLanguage('es')" class="px-3 py-1.5 text-[10px] font-bold rounded-full transition-all text-zinc-400 flex items-center gap-1">🇪🇸 SPA</button>
+                    </div>
+                </div>
+
+                <div id="interaction-section" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 mb-4">
+                    <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 font-mono mb-2">TYPE</h3>
+                    <div id="interaction-options" class="grid grid-cols-2 gap-2"></div>
+                </div>
+
+                <!-- Value Props -->
+                <div id="valueprops-section" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-3 mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Value Props</h3>
+                        <button onclick="showAddValueProp()" class="text-zinc-600 hover:text-amber-400 transition-colors"><i class="fas fa-plus text-[10px]"></i></button>
+                    </div>
+                    <div id="valueprops-list" class="space-y-1"></div>
+                    <div id="valueprop-add-row" class="hidden mt-2 flex gap-1">
+                        <input id="valueprop-input" type="text" placeholder="e.g. Arborist class June 5"
+                               class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-[11px] text-zinc-200 focus:outline-none focus:border-amber-500/50 min-w-0"
+                               onkeydown="if(event.key==='Enter')addValueProp();if(event.key==='Escape')hideAddValueProp()">
+                        <button onclick="addValueProp()" class="text-[10px] text-amber-400 hover:text-amber-300 px-1.5 border border-zinc-700 rounded-lg transition-colors">Add</button>
+                    </div>
+                    <div id="valueprops-empty" class="text-[10px] text-zinc-600 text-center py-1">No props yet — add one above</div>
+                </div>
+
+                <div class="flex-1"></div>
+
+                <div class="space-y-2 flex-shrink-0">
+                    <button onclick="startTranscription()" id="transcribe-btn"
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 transition-all text-white font-semibold py-2.5 rounded-2xl text-xs flex items-center justify-center gap-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-bolt"></i>
+                        <span id="transcribe-text">TRANSCRIBE INSTANT</span>
+                    </button>
+                    <button onclick="submitAction()" id="submit-btn"
+                            class="w-full bg-zinc-800 hover:bg-zinc-700 transition-all text-white font-semibold py-2.5 rounded-2xl text-xs flex items-center justify-center gap-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-robot" id="submit-btn-icon"></i>
+                        <span id="submit-btn-text">SUMMARIZE FOR CRM</span>
+                    </button>
+                </div>
+
+                <div id="status" class="mt-3 text-xs space-y-1.5 hidden">
+                    <div class="flex items-center gap-x-2 text-emerald-400">
+                        <div id="status-dot" class="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></div>
+                        <span id="status-text" class="font-mono text-[10px]"></span>
+                    </div>
+                    <div class="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 w-0 transition-all"></div>
+                    </div>
+                    <button onclick="retryTranscription()" id="retry-btn"
+                            class="hidden w-full text-xs py-1 text-emerald-400 hover:text-emerald-300 border border-zinc-700 rounded-xl">Retry</button>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL VIEWPORT ═══ -->
+            <div class="flex-1 flex flex-col min-w-0">
+                <div class="border-b border-zinc-800 px-4 py-1.5 flex items-center justify-between flex-shrink-0">
+                    <button id="nav-left" onclick="navPanel(-1)" class="nav-arrow w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <div id="panel-nav-dots" class="flex items-center gap-1"></div>
+                    <button id="nav-right" onclick="navPanel(1)" class="nav-arrow w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+
+                <div id="panels-container" class="flex-1 flex min-h-0 overflow-hidden">
+                    <!-- Panel: CRM Input -->
+                    <div id="panel-crm" class="hidden w-full p-5 flex flex-col min-h-0">
+                        <div class="mb-3 flex items-center gap-2 text-purple-400 text-xs font-semibold">
+                            <i class="fas fa-database"></i> CRM INPUT
+                        </div>
+                        <div id="crm-empty" class="flex-1 flex flex-col items-center justify-center">
+                            <div class="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-paste text-2xl text-purple-400"></i>
+                            </div>
+                            <p class="text-zinc-400 text-sm mb-1">Paste your Salesforce page</p>
+                            <p class="text-zinc-600 text-[11px] mb-5">Cmd+A &rarr; Cmd+C on the account page</p>
+                            <button onclick="parsePrepFromClipboard()" class="bg-purple-600 hover:bg-purple-500 transition-all text-white font-semibold py-3 px-8 rounded-2xl text-sm flex items-center gap-2">
+                                <i class="fas fa-clipboard"></i> PASTE FROM CLIPBOARD
+                            </button>
+                            <button onclick="document.getElementById('crm-fallback').classList.toggle('hidden')" class="mt-4 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">Or paste manually</button>
+                            <div id="crm-fallback" class="hidden mt-3 w-full max-w-sm">
+                                <textarea id="prep-raw-input" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-[11px] text-zinc-300 leading-relaxed resize-y focus:outline-none focus:border-purple-500/40 transcript-scroll h-32" placeholder="Paste Salesforce text here..."></textarea>
+                                <button onclick="parseAndPreparePrepInput()" class="mt-2 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold py-2 rounded-xl text-xs">PARSE</button>
+                            </div>
+                        </div>
+                        <div id="crm-parsed" class="hidden flex-1 flex flex-col min-h-0">
+                            <div class="mb-2 flex items-center justify-between">
+                                <span class="text-[11px] text-zinc-500">Parsed CRM Data</span>
+                                <div class="flex items-center gap-3">
+                                    <button onclick="repasteCRM()" class="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"><i class="fas fa-redo mr-1"></i>Re-paste</button>
+                                    <button id="copy-crm-btn" onclick="copyCRM()" class="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"><i class="fas fa-copy mr-1"></i>COPY</button>
+                                </div>
+                            </div>
+                            <div id="crm-parsed-text" contenteditable="true" class="transcript-scroll bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-zinc-300 leading-relaxed text-[12px] flex-1 overflow-auto whitespace-pre-wrap focus:outline-none focus:border-purple-500/50"></div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Game Plan -->
+                    <div id="panel-gameplan" class="hidden w-full flex flex-col min-h-0">
+                        <div class="px-5 pt-4 pb-2 flex items-center justify-between flex-shrink-0">
+                            <div class="flex items-center gap-2 text-purple-400 text-xs font-semibold">
+                                <i class="fas fa-chess"></i>
+                                <span id="gameplan-panel-title">Game Plan</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="toggle-prompt-btn" onclick="togglePromptView()" class="hidden text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"><i class="fas fa-eye mr-1"></i>View prompt</button>
+                                <button id="copy-gameplan-btn" onclick="copyGamePlan()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                            </div>
+                        </div>
+                        <div id="gameplan-empty" class="flex-1 flex flex-col items-center justify-center text-center">
+                            <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-chess text-2xl text-purple-500/40"></i>
+                            </div>
+                            <p class="text-zinc-500 text-sm">Paste CRM data to get started</p>
+                        </div>
+
+                        <!-- Structured game plan view -->
+                        <div id="gameplan-content" class="hidden flex-1 flex flex-col min-h-0 overflow-auto transcript-scroll">
+                            <!-- Objective — centered hero -->
+                            <div id="gp-objective-wrap" class="flex-shrink-0 py-5 text-center border-b border-zinc-800/60">
+                                <div class="inline-block">
+                                    <span id="gp-objective-verb" class="text-2xl font-bold tracking-[0.2em] uppercase"></span>
+                                </div>
+                                <p id="gp-objective-goal" class="text-[13px] text-zinc-400 mt-1.5 max-w-xl mx-auto leading-relaxed"></p>
+                            </div>
+
+                            <!-- Two-column body -->
+                            <div class="flex flex-1 min-h-0">
+                                <!-- LEFT: Context, Intel, Quick Text -->
+                                <div class="w-[30%] border-r border-zinc-800/60 p-4 overflow-auto transcript-scroll space-y-3 flex-shrink-0">
+                                    <div id="gp-context-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3">
+                                        <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Context</div>
+                                        <div id="gp-context" class="text-[12px] text-zinc-300 leading-relaxed"></div>
+                                    </div>
+                                    <div id="gp-intel-wrap" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3">
+                                        <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Intel</div>
+                                        <div id="gp-intel" class="text-[12px] text-zinc-300 leading-relaxed"></div>
+                                    </div>
+                                    <div id="text-msg-section" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3 border border-sky-500/10">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-[10px] uppercase tracking-widest text-sky-400 font-semibold">Quick Text</span>
+                                            <button id="copy-text-msg-btn" onclick="copyTextMessage()" class="flex items-center gap-x-1 text-[10px] text-zinc-500 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                                        </div>
+                                        <div id="text-msg-content" class="text-zinc-300 text-[12px] leading-relaxed whitespace-pre-wrap"></div>
+                                    </div>
+                                </div>
+
+                                <!-- RIGHT: Talking Points, Objections -->
+                                <div class="flex-1 p-4 overflow-auto transcript-scroll space-y-3">
+                                    <div id="gp-questions-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3">
+                                        <div class="text-[10px] uppercase tracking-widest text-purple-400 font-semibold mb-2">Talking Points</div>
+                                        <div id="gp-questions" class="text-[12px] text-zinc-200 leading-relaxed"></div>
+                                    </div>
+                                    <div id="gp-objections-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3">
+                                        <div class="text-[10px] uppercase tracking-widest text-amber-400 font-semibold mb-2">AAA Playbook</div>
+                                        <div id="gp-objections" class="text-[12px] text-zinc-300 leading-relaxed"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Raw prompt view (toggle) -->
+                        <div id="gameplan-raw" class="hidden flex-1 flex flex-col min-h-0 px-5 pb-4">
+                            <div id="gameplan-text" class="transcript-scroll bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-zinc-400 leading-relaxed text-[11px] flex-1 overflow-auto whitespace-pre-wrap font-mono"></div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Transcription -->
+                    <div id="panel-transcript" class="hidden w-full p-5 flex flex-col min-h-0">
+                        <div class="mb-3 flex items-center justify-between">
+                            <div class="flex items-center gap-x-3">
+                                <div id="transcript-label" class="flex items-center gap-2 text-emerald-400 text-xs font-semibold"><i class="fas fa-file-audio"></i> TRANSCRIPTION</div>
+                                <span id="lang-badge" class="hidden inline-flex items-center px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/10 text-emerald-400"><span id="detected-lang">EN</span></span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="downloadTranscript()" class="text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-download"></i></button>
+                                <button id="copy-transcript-btn" onclick="copyTranscript()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                            </div>
+                        </div>
+                        <div id="transcript-empty" class="flex-1 flex flex-col items-center justify-center text-center">
+                            <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-microphone text-2xl text-zinc-600"></i>
+                            </div>
+                            <p class="text-zinc-500 text-sm">Record a call to see the transcript</p>
+                            <p class="text-zinc-600 text-[11px] mt-1">Press <kbd class="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">R</kbd> to start</p>
+                            <button onclick="startManualEntry()" class="mt-4 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg">
+                                <i class="fas fa-keyboard"></i> Type / paste text
+                            </button>
+                        </div>
+                        <div id="transcript-content" class="hidden flex-1 flex flex-col min-h-0">
+                            <div id="transcript-text" contenteditable="false"
+                                 class="transcript-scroll bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-zinc-300 leading-relaxed text-[14px] flex-1 overflow-auto whitespace-pre-wrap focus:outline-none focus:border-blue-500/50"
+                                 data-placeholder="Type or paste your text here..."></div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Post-Call Notes -->
+                    <div id="panel-postcall" class="hidden w-full p-5 flex flex-col min-h-0">
+                        <div class="mb-3 flex items-center justify-between">
+                            <div id="postcall-label" class="flex items-center gap-2 text-emerald-400 text-xs font-semibold"><i class="fas fa-clipboard-check"></i> POST-CALL</div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="downloadSummary()" class="text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-download"></i></button>
+                                <button id="copy-summary-btn" onclick="copySummary()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                            </div>
+                        </div>
+                        <div id="postcall-empty" class="flex-1 flex flex-col items-center justify-center text-center">
+                            <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-clipboard-check text-2xl text-zinc-600"></i>
+                            </div>
+                            <p class="text-zinc-500 text-sm">Summary appears after transcription</p>
+                        </div>
+                        <div id="postcall-content" class="hidden flex-1 flex flex-col min-h-0 overflow-auto transcript-scroll">
+                            <div id="summary-title-bar" class="hidden mb-3">
+                                <span id="summary-title-text" class="text-[15px] font-semibold text-white tracking-tight"></span>
+                            </div>
+                            <div id="summary-text" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-zinc-300 leading-relaxed text-[13px] whitespace-pre-wrap"></div>
+                            <div id="next-step-section" class="hidden mt-3">
+                                <div id="next-step-label" class="mb-1.5 flex items-center gap-2 text-emerald-400 text-[10px] font-semibold"><i class="fas fa-arrow-right"></i> NEXT STEP</div>
+                                <div id="next-step-box" class="bg-zinc-950 border border-emerald-500/30 rounded-xl px-4 py-3">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div id="next-step-title" class="text-white text-[13px] font-semibold leading-snug flex-1"></div>
+                                        <button id="copy-next-step-title-btn" onclick="copyNextStepTitle()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors flex-shrink-0"><i class="fas fa-copy"></i> COPY</button>
+                                    </div>
+                                    <div id="next-step-comment-wrap" class="hidden mt-2 pt-2 border-t border-zinc-800 flex items-start justify-between gap-2">
+                                        <div id="next-step-comment" class="text-zinc-400 text-[12px] leading-relaxed flex-1"></div>
+                                        <button id="copy-next-step-comment-btn" onclick="copyNextStepComment()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors flex-shrink-0"><i class="fas fa-copy"></i> COPY</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="followup-section" class="hidden mt-3">
+                                <div class="mb-1.5 flex items-center gap-2 text-amber-400 text-[10px] font-semibold"><i class="fas fa-calendar"></i> FOLLOW UP</div>
+                                <div class="bg-zinc-950 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
+                                    <span id="followup-date" class="text-white text-[13px] font-semibold"></span>
+                                    <button id="copy-followup-btn" onclick="copyFollowUp()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Coach -->
+                    <div id="panel-coach" class="hidden w-full p-5 flex flex-col min-h-0">
+                        <div class="mb-3 flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-amber-400 text-xs font-semibold"><i class="fas fa-brain"></i> COACH</div>
+                            <button id="copy-coaching-btn" onclick="copyCoaching()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                        </div>
+                        <div id="coach-empty" class="flex-1 flex flex-col items-center justify-center text-center">
+                            <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-brain text-2xl text-zinc-600"></i>
+                            </div>
+                            <p class="text-zinc-500 text-sm">Coaching loads with the summary</p>
+                        </div>
+                        <div id="coaching-content" class="hidden flex-1 flex flex-col min-h-0">
+                            <div id="coaching-text" class="transcript-scroll bg-zinc-950 border border-amber-500/20 rounded-2xl p-4 text-zinc-300 leading-relaxed text-[13px] flex-1 overflow-auto whitespace-pre-wrap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-zinc-800 bg-zinc-900 px-6 py-2 flex items-center justify-between text-[10px] text-zinc-500 flex-shrink-0">
+                    <div>Groq Whisper Turbo &bull; Grok 4.1 Fast</div>
+                    <span class="font-mono">v3.0 &bull; 2026</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ SETTINGS MODAL ═══ -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center" onclick="if(event.target===this)closeSettings()">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl w-[440px] max-h-[90vh] overflow-auto">
+            <div class="px-6 py-5 border-b border-zinc-800 flex items-center justify-between">
+                <h2 class="font-semibold">Settings</h2>
+                <button onclick="closeSettings()" class="text-zinc-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <div class="flex items-center gap-x-3 mb-2">
+                        <div class="w-5 h-5 bg-emerald-500/10 text-emerald-400 rounded-lg flex items-center justify-center"><i class="fas fa-bolt text-xs"></i></div>
+                        <p class="text-sm font-medium">Groq (Whisper Turbo)</p>
+                    </div>
+                    <div class="key-input-wrap">
+                        <input id="groq-key" type="password" placeholder="gsk_..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
+                        <button type="button" class="toggle-vis" onclick="toggleKeyVis('groq-key', this)"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div class="text-[10px] text-zinc-500 mt-1">Free at <a href="https://console.groq.com/keys" target="_blank" class="underline">console.groq.com</a></div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-x-3 mb-2">
+                        <div class="w-5 h-5 bg-purple-500/10 text-purple-400 rounded-lg flex items-center justify-center"><i class="fas fa-robot text-xs"></i></div>
+                        <p class="text-sm font-medium">xAI (Grok)</p>
+                    </div>
+                    <div class="key-input-wrap">
+                        <input id="xai-key" type="password" placeholder="xai-..." class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-zinc-500">
+                        <button type="button" class="toggle-vis" onclick="toggleKeyVis('xai-key', this)"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div class="text-[10px] text-zinc-500 mt-1">From <a href="https://console.x.ai/" target="_blank" class="underline">xAI Console</a></div>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium">Summary Instructions</p>
+                        <button onclick="resetPrompt()" class="text-[10px] text-zinc-500 hover:text-zinc-300">Reset</button>
+                    </div>
+                    <textarea id="summary-prompt" onchange="savePrompt()" rows="6"
+                              class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-[11px] text-zinc-300 leading-relaxed resize-none focus:outline-none focus:border-zinc-500/50 transcript-scroll"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-zinc-800 flex gap-x-3">
+                <button onclick="saveKeys()" class="flex-1 bg-white text-black font-semibold py-2.5 rounded-2xl text-sm hover:bg-zinc-100">SAVE</button>
+                <button onclick="testKeys()" class="flex-1 border border-zinc-700 font-medium py-2.5 rounded-2xl text-sm hover:bg-zinc-800">TEST</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="hidden-player" class="hidden"></audio>
+
+    <script>
+        // ═══ CONFIG ═══
+        const XAI_PROXY = localStorage.getItem('xai_proxy') || 'https://voiceflow-proxy.edoardosanti.workers.dev';
+        let GROQ_KEY = localStorage.getItem('groq_key') || '';
+        let XAI_KEY = localStorage.getItem('xai_key') || '';
+
+        const DEFAULT_PROMPT = `Summarize this call for CRM notes. Edoardo is a sales rep at Vermeer Southeast (large machinery, long sales cycles). He works from the office in GA.
+
+The transcript has NO speaker labels — figure out who is speaking from context.
+
+Write ONLY bullet points. No paragraphs, no intro sentence, no headers, no markdown, no bold, no asterisks. Just plain "-" bullets.
+
+Style: casual and direct, like personal notes you'd jot down right after a call. Use "I" for Edoardo and the client's name or "he/she/they" for them. Keep each bullet short and to the point.
+
+Cover what was talked about, what the client wants or needs, any problems or concerns raised, and what happens next. Only include what actually came up — skip anything that didn't. If it was a voicemail or very short, one or two bullets is fine.
+
+Write in English even if the call was in Spanish.`;
+
+        // ═══ STATE ═══
+        let currentAudio = null;
+        let currentAudioName = '';
+        let currentAudioUrl = null;
+        let currentTranscript = null;
+        let currentSummary = null;
+        let currentCoaching = null;
+        let currentGamePlan = null;
+        let parsedPrepOutput = '';
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let mediaStream = null;
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+        let currentLanguage = 'es';
+        let flowMode = null; // 'outbound' or 'inbound'
+        let showingPromptView = false;
+        let valueProps = JSON.parse(localStorage.getItem('value_props') || '[]');
+
+        // Panel navigation
+        let panels = [];
+        let panelIndex = 0;
+        const PANEL_DEFS = {
+            crm:        { id: 'panel-crm',        label: 'CRM',         icon: 'fa-database'        },
+            gameplan:   { id: 'panel-gameplan',    label: 'Plan',        icon: 'fa-chess'           },
+            transcript: { id: 'panel-transcript',  label: 'Transcript',  icon: 'fa-file-audio'      },
+            postcall:   { id: 'panel-postcall',    label: 'Post-Call',   icon: 'fa-clipboard-check' },
+            coach:      { id: 'panel-coach',       label: 'Coach',       icon: 'fa-brain'           }
+        };
+
+        // ═══ START SCREEN ═══
+        async function startOutbound() {
+            flowMode = 'outbound';
+            panels = ['crm', 'gameplan', 'transcript', 'postcall', 'coach'];
+            panelIndex = 0;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            setLanguage('es');
+            document.getElementById('mode-label').textContent = 'OUTBOUND';
+            document.getElementById('mode-label').className = 'text-[10px] uppercase tracking-[0.2em] font-bold text-purple-400';
+            renderInteractionOptions([
+                { value: 'outbound_call', icon: 'fa-phone-alt', label: 'Call' },
+                { value: 'voicemail', icon: 'fa-voicemail', label: 'Left VM' }
+            ]);
+            applyModeTheme('outbound');
+            updateSubmitButton();
+            showPanels();
+            document.getElementById('transcribe-btn').disabled = true;
+            document.getElementById('submit-btn').disabled = true;
+            try { await parsePrepFromClipboard(); } catch(e) {}
+        }
+
+        function startInbound() {
+            flowMode = 'inbound';
+            panels = ['transcript', 'postcall', 'coach'];
+            panelIndex = 0;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            setLanguage('es');
+            document.getElementById('mode-label').textContent = 'INBOUND';
+            document.getElementById('mode-label').className = 'text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-400';
+            renderInteractionOptions([
+                { value: 'inbound_call', icon: 'fa-phone-volume', label: 'Call' },
+                { value: 'face_to_face', icon: 'fa-handshake', label: 'Walk-in' }
+            ]);
+            applyModeTheme('inbound');
+            updateSubmitButton();
+            showPanels();
+            document.getElementById('transcribe-btn').disabled = true;
+            document.getElementById('submit-btn').disabled = true;
+            setTimeout(() => toggleRecording(), 300);
+        }
+
+        function backToStart() {
+            if (!confirm('Go back? This resets the session.')) return;
+            window.location.reload();
+        }
+
+        function renderInteractionOptions(options) {
+            const c = flowMode === 'outbound' ? 'purple' : 'emerald';
+            document.getElementById('interaction-options').innerHTML = options.map(opt => `
+                <label class="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 cursor-pointer hover:border-zinc-600 transition-colors has-[:checked]:border-${c}-500 has-[:checked]:bg-${c}-500/10">
+                    <input type="radio" name="call-type" value="${opt.value}" class="hidden">
+                    <i class="fas ${opt.icon} text-[10px] text-zinc-400"></i>
+                    <span class="text-[10px] text-zinc-300">${opt.label}</span>
+                </label>`).join('');
+        }
+
+        // ═══ PANEL NAVIGATION ═══
+        function showPanels() {
+            Object.values(PANEL_DEFS).forEach(p => {
+                document.getElementById(p.id).classList.add('hidden');
+            });
+            const activeKey = panels[panelIndex];
+            if (activeKey) {
+                document.getElementById(PANEL_DEFS[activeKey].id).classList.remove('hidden');
+            }
+            document.getElementById('nav-left').disabled = panelIndex <= 0;
+            document.getElementById('nav-right').disabled = panelIndex >= panels.length - 1;
+            renderBreadcrumbs();
+        }
+
+        function navPanel(delta) {
+            const n = panelIndex + delta;
+            if (n < 0 || n > panels.length - 1) return;
+            panelIndex = n;
+            showPanels();
+        }
+
+        function navigateTo(panelKey) {
+            const idx = panels.indexOf(panelKey);
+            if (idx === -1) return;
+            panelIndex = idx;
+            showPanels();
+        }
+
+        function renderBreadcrumbs() {
+            const activeKey = panels[panelIndex];
+            const headerCrumbs = document.getElementById('panel-nav-crumbs');
+            const dotCrumbs = document.getElementById('panel-nav-dots');
+            headerCrumbs.innerHTML = panels.map(key => {
+                const d = PANEL_DEFS[key];
+                const active = key === activeKey;
+                return `<span class="crumb ${active ? 'active' : 'inactive'}" onclick="navigateTo('${key}')"><i class="fas ${d.icon} mr-1"></i>${d.label}</span>`;
+            }).join('');
+            dotCrumbs.innerHTML = panels.map((key, i) => {
+                const visible = key === activeKey;
+                return `<span class="w-1.5 h-1.5 rounded-full transition-all ${visible ? 'bg-white' : 'bg-zinc-700'}" onclick="navigateTo('${key}')" style="cursor:pointer"></span>`;
+            }).join('');
+        }
+
+        // ═══ THEME ═══
+        function applyModeTheme(mode) {
+            const out = mode === 'outbound';
+            const c = out ? 'purple' : 'emerald';
+
+            // Sidebar + header
+            document.getElementById('header-logo').className = `w-7 h-7 bg-gradient-to-br ${out ? 'from-purple-500 to-purple-600' : 'from-emerald-500 to-green-600'} rounded-xl flex items-center justify-center`;
+            document.getElementById('header-title').className = `logo-font text-lg font-semibold tracking-tighter text-${c}-400`;
+            document.getElementById('mic-icon').className = `fas fa-microphone text-xl text-${c}-400`;
+            document.getElementById('record-content').className = `mx-auto w-10 h-10 bg-${c}-500/10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`;
+            document.getElementById('record-zone').className = `record-zone border-2 border-dashed border-zinc-700 rounded-2xl p-4 text-center cursor-pointer hover:border-${c}-500 group transition-colors mb-4`;
+            document.getElementById('sidebar').style.background = out ? 'linear-gradient(to bottom, rgba(168,85,247,0.03), rgba(0,0,0,0))' : '';
+            document.getElementById('audio-icon').className = `w-8 h-8 bg-${c}-500/10 text-${c}-500 rounded-xl flex items-center justify-center`;
+
+            // Panel headers — transcript, post-call, next step
+            document.getElementById('transcript-label').className = `flex items-center gap-2 text-${c}-400 text-xs font-semibold`;
+            document.getElementById('postcall-label').className = `flex items-center gap-2 text-${c}-400 text-xs font-semibold`;
+            document.getElementById('next-step-label').className = `mb-1.5 flex items-center gap-2 text-${c}-400 text-[10px] font-semibold`;
+            document.getElementById('next-step-box').className = `bg-zinc-950 border border-${c}-500/30 rounded-xl px-4 py-3`;
+
+            // Lang badge
+            const lb = document.getElementById('lang-badge');
+            lb.className = lb.className.replace(/bg-(emerald|purple)-500\/10/g, `bg-${c}-500/10`).replace(/text-(emerald|purple)-400/g, `text-${c}-400`);
+
+            // Transcribe button initial state
+            const tb = document.getElementById('transcribe-btn');
+            tb.className = tb.className.replace(/bg-(emerald|purple)-600/g, `bg-${c}-600`).replace(/hover:bg-(emerald|purple)-500/g, `hover:bg-${c}-500`);
+
+            // Status indicator + progress bar
+            const statusDot = document.getElementById('status-dot');
+            const statusLine = document.getElementById('status-text');
+            if (statusDot) statusDot.className = `w-2 h-2 bg-${c}-400 rounded-full animate-ping`;
+            if (statusLine) statusLine.parentElement.className = `flex items-center gap-x-2 text-${c}-400`;
+            const pb = document.getElementById('progress-bar');
+            if (pb) pb.className = `h-full bg-gradient-to-r ${out ? 'from-purple-500 to-violet-400' : 'from-emerald-500 to-cyan-400'} w-0 transition-all`;
+            const retryBtn = document.getElementById('retry-btn');
+            if (retryBtn) retryBtn.className = `hidden w-full text-xs py-1 text-${c}-400 hover:text-${c}-300 border border-zinc-700 rounded-xl`;
+        }
+
+        // ═══ LANGUAGE ═══
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            const eng = document.getElementById('lang-eng-btn');
+            const spa = document.getElementById('lang-spa-btn');
+            if (lang === 'en') {
+                eng.classList.add('bg-blue-500','text-white','shadow-lg','shadow-blue-500/50');
+                eng.classList.remove('text-zinc-400');
+                spa.classList.remove('bg-blue-500','text-white','shadow-lg','shadow-blue-500/50');
+                spa.classList.add('text-zinc-400');
+            } else {
+                spa.classList.add('bg-blue-500','text-white','shadow-lg','shadow-blue-500/50');
+                spa.classList.remove('text-zinc-400');
+                eng.classList.remove('bg-blue-500','text-white','shadow-lg','shadow-blue-500/50');
+                eng.classList.add('text-zinc-400');
+            }
+        }
+
+        // ═══ RECORDING ═══
+        async function toggleRecording() { isRecording ? stopRecording() : startRecording(); }
+
+        async function startRecording() {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(mediaStream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    if (recordingSeconds < 4) { showToast('Recording too short — discarded'); return; }
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    processAudio(blob, `recording-${Date.now()}.webm`);
+                };
+                mediaRecorder.start(1000);
+                isRecording = true;
+                const color = flowMode === 'outbound' ? 'text-purple-400' : 'text-emerald-400';
+                document.getElementById('mic-icon').classList.add('mic-pulse', color);
+                document.getElementById('record-text').textContent = 'Recording...';
+                document.getElementById('record-sub').innerHTML = `<span id="timer" class="font-mono ${color}">00:00</span>`;
+                recordingSeconds = 0;
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                    const m = Math.floor(recordingSeconds/60).toString().padStart(2,'0');
+                    const s = (recordingSeconds%60).toString().padStart(2,'0');
+                    document.getElementById('timer').textContent = `${m}:${s}`;
+                }, 1000);
+            } catch (err) {
+                console.error('Mic error:', err);
+                alert('Could not access microphone. Please allow permissions.');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+            if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+            isRecording = false;
+            clearInterval(recordingTimer);
+            const micIcon = document.getElementById('mic-icon');
+            micIcon.classList.remove('mic-pulse','text-emerald-400','text-purple-400');
+            micIcon.classList.add(flowMode === 'outbound' ? 'text-purple-400' : 'text-emerald-400');
+            document.getElementById('record-text').textContent = 'Record';
+            document.getElementById('record-sub').innerHTML = 'Click or press <kbd class="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">R</kbd>';
+        }
+
+        function processAudio(blob, name) {
+            currentAudio = blob;
+            currentAudioName = name;
+            document.getElementById('record-zone').classList.add('hidden');
+            document.getElementById('audio-info').classList.remove('hidden');
+            document.getElementById('audio-name').textContent = name;
+            document.getElementById('audio-size').textContent = (blob.size/(1024*1024)).toFixed(2) + ' MB';
+            if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+            currentAudioUrl = URL.createObjectURL(blob);
+            const player = document.getElementById('audio-player');
+            player.src = currentAudioUrl;
+            player.classList.remove('hidden');
+            document.getElementById('transcribe-btn').disabled = false;
+            swapButtonFocus(false);
+        }
+
+        function playAudio() { document.getElementById('audio-player').play(); }
+        function removeAudio() { if (confirm('Remove this audio?')) clearAudio(); }
+        function clearAudio() {
+            currentAudio = null;
+            if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+            currentAudioUrl = null;
+            document.getElementById('audio-info').classList.add('hidden');
+            document.getElementById('record-zone').classList.remove('hidden');
+            document.getElementById('transcribe-btn').disabled = true;
+            swapButtonFocus(false);
+        }
+
+        // ═══ PROMPT PERSISTENCE ═══
+        function savePrompt() {
+            const val = document.getElementById('summary-prompt').value.trim();
+            if (val) localStorage.setItem('summary_prompt', val);
+            else localStorage.removeItem('summary_prompt');
+        }
+        function resetPrompt() {
+            document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
+            localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
+        }
+        function getSummaryPrompt() {
+            return document.getElementById('summary-prompt').value.trim() || DEFAULT_PROMPT;
+        }
+
+        function getCallType() {
+            const checked = document.querySelector('input[name="call-type"]:checked');
+            if (!checked) return flowMode === 'outbound' ? 'Outbound Phone Call' : null;
+            const labels = { outbound_call:'Outbound Phone Call', inbound_call:'Inbound Phone Call', voicemail:'Left a Voicemail', face_to_face:'Face-to-Face / Walk-in' };
+            return labels[checked.value] || null;
+        }
+
+        // ═══ SETTINGS ═══
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('groq-key').value = GROQ_KEY;
+            document.getElementById('xai-key').value = XAI_KEY;
+        }
+        function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+        function saveKeys() {
+            const g = document.getElementById('groq-key').value.trim();
+            const x = document.getElementById('xai-key').value.trim();
+            if (g) GROQ_KEY = g;
+            if (x) XAI_KEY = x;
+            localStorage.setItem('groq_key', GROQ_KEY);
+            localStorage.setItem('xai_key', XAI_KEY);
+            closeSettings();
+            showToast('Keys saved!');
+        }
+        async function testKeys() {
+            const groqTest = document.getElementById('groq-key').value.trim() || GROQ_KEY;
+            if (!groqTest) { showToast('Enter Groq key first'); return; }
+            try {
+                const form = new FormData();
+                form.append('file', new Blob(['test']), 'test.webm');
+                form.append('model', 'whisper-large-v3');
+                const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                    method:'POST', headers:{'Authorization':`Bearer ${groqTest}`}, body:form
+                });
+                showToast(res.ok ? 'Groq key is valid!' : `Groq error: ${res.status}`);
+            } catch(e) { showToast('Connection failed'); }
+        }
+        function toggleKeyVis(inputId, btn) {
+            const inp = document.getElementById(inputId);
+            const isP = inp.type === 'password';
+            inp.type = isP ? 'text' : 'password';
+            btn.innerHTML = isP ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+        }
+
+        // ═══ TRANSCRIPTION ═══
+        async function startTranscription() {
+            if (!currentAudio) return;
+            if (!GROQ_KEY) { alert('Set your Groq key in Settings'); openSettings(); return; }
+            const btn = document.getElementById('transcribe-btn');
+            btn.disabled = true;
+            document.getElementById('transcribe-text').textContent = 'TRANSCRIBING...';
+            document.getElementById('status').classList.remove('hidden');
+            document.getElementById('status-text').textContent = 'Uploading to Groq...';
+            document.getElementById('progress-bar').style.width = '30%';
+            try {
+                const transcript = await groqTranscribe(currentAudio);
+                currentTranscript = transcript;
+                hasCallTranscript = true;
+                renderTranscript(transcript);
+                document.getElementById('submit-btn').disabled = false;
+                updateSubmitButton();
+                swapButtonFocus(true);
+                document.getElementById('status-text').textContent = 'Transcription complete!';
+                document.getElementById('progress-bar').style.width = '100%';
+                setTimeout(() => document.getElementById('status').classList.add('hidden'), 800);
+                navigateTo('transcript');
+            } catch (err) {
+                console.error('Transcription error:', err);
+                showError('Groq error', err.message || err);
+            } finally {
+                btn.disabled = false;
+                document.getElementById('transcribe-text').textContent = 'TRANSCRIBE INSTANT';
+            }
+        }
+
+        async function groqTranscribe(audioBlob) {
+            const form = new FormData();
+            form.append('file', audioBlob, 'audio.webm');
+            form.append('model', 'whisper-large-v3');
+            form.append('response_format', 'verbose_json');
+            form.append('language', currentLanguage);
+            form.append('prompt', 'Morbark, VIO, Vermeer, chipper, stump grinder, BC1500, BC1800, SC70TX, WC2300, Bobcat, skid steer, tree service, CRM, Edoardo');
+            const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                method:'POST', headers:{'Authorization':`Bearer ${GROQ_KEY}`}, body:form
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(`Groq error (${res.status}): ${errData.error?.message || res.statusText}`);
+            }
+            const data = await res.json();
+            return { text: data.text, language_code: data.language || 'en' };
+        }
+
+        function showError(title, msg) {
+            document.getElementById('status').classList.remove('hidden');
+            document.getElementById('status-text').innerHTML = `${title} <span class="block text-red-400 text-[10px] font-mono mt-1">${msg}</span>`;
+            document.getElementById('status-dot').classList.remove('bg-emerald-400','bg-purple-400','animate-ping');
+            document.getElementById('status-dot').classList.add('bg-red-500');
+            document.getElementById('retry-btn').classList.remove('hidden');
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('progress-bar').classList.add('bg-red-500');
+        }
+
+        function retryTranscription() {
+            document.getElementById('retry-btn').classList.add('hidden');
+            document.getElementById('status').classList.add('hidden');
+            document.getElementById('status-dot').classList.remove('bg-red-500');
+            const dotColor = flowMode === 'outbound' ? 'bg-purple-400' : 'bg-emerald-400';
+            document.getElementById('status-dot').classList.add(dotColor,'animate-ping');
+            document.getElementById('progress-bar').classList.remove('bg-red-500');
+            document.getElementById('progress-bar').style.width = '0%';
+            startTranscription();
+        }
+
+        // ═══ CRM PARSING ═══
+        function parseSalesforceDump(rawText) {
+            const uiJunk = [
+                /No more past activities to load\./gi,
+                /Skip to the top of the activity timeline/gi,
+                /Account Team\s*\(\d+\)/gi,
+                /Show actions for Account Team/gi,
+                /@Me\b/g,
+                /Recent Items/gi,
+                /Sales Resources/gi,
+                /Search IntelliDealer Equipment/gi,
+                /Load More Activities/gi,
+                /Show More/gi,
+            ];
+            let text = rawText || '';
+            uiJunk.forEach(re => { text = text.replace(re, ''); });
+            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            const findNext = (key) => { const idx = lines.indexOf(key); return (idx > -1 && idx+1 < lines.length) ? lines[idx+1] : 'N/A'; };
+            let accountName = 'N/A';
+            const nameIdx = lines.indexOf('Account Name');
+            if (nameIdx > -1 && lines[nameIdx+1]) accountName = lines[nameIdx+1];
+            const phone = findNext('Phone');
+            const owner = findNext('Account Owner');
+            const rank = findNext('Rank');
+            let address = 'N/A';
+            const addrIdx = lines.indexOf('Billing Address');
+            if (addrIdx > -1) { address = lines.slice(addrIdx+1, addrIdx+4).join(', ').replace('Edit Billing Address','').trim() || 'N/A'; }
+            let county = '';
+            const countyIdx = lines.indexOf('Billing County');
+            if (countyIdx > -1) { const c = lines[countyIdx+1] || ''; if (c && !c.startsWith('Edit') && !c.startsWith('Open')) county = c; }
+            const openOppAmount = findNext('Open Opportunities Amount');
+            const wonOppAmount = findNext('Won Opportunities Amount');
+            const opportunities = [];
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i] === 'Opportunity Record Type:') {
+                    const oppName = lines[i-2] || 'Unknown Opp';
+                    let stage = 'Unknown Stage';
+                    for (let j = 1; j <= 6; j++) { if (lines[i+j] === 'Stage:' && lines[i+j+1]) { stage = lines[i+j+1]; break; } }
+                    opportunities.push(`${oppName} (${stage})`);
+                }
+            }
+            const contacts = [];
+            for (let i = 0; i < lines.length; i++) {
+                if (/^Open .+ Preview$/.test(lines[i])) {
+                    const name = lines[i-1] || '';
+                    if (!name || name.startsWith('Open') || name.startsWith('Show') || name.length > 60) continue;
+                    let title='', mobile='', email='';
+                    for (let j = 1; j <= 10; j++) {
+                        const l = lines[i+j] || '';
+                        if (l === 'Title:' && lines[i+j+1] && !lines[i+j+1].startsWith('Show') && !lines[i+j+1].startsWith('Open') && !lines[i+j+1].endsWith(':')) title = lines[i+j+1];
+                        if (l === 'Mobile:' && lines[i+j+1] && !lines[i+j+1].startsWith('Show') && !lines[i+j+1].startsWith('Open')) mobile = lines[i+j+1];
+                        if (l === 'Email:' && lines[i+j+1] && !lines[i+j+1].startsWith('Show') && !lines[i+j+1].startsWith('Open')) email = lines[i+j+1];
+                        if (l === 'Show Actions') break;
+                    }
+                    if (mobile || email) contacts.push({ name, title, mobile, email });
+                }
+            }
+            const upcomingTasks = [];
+            const taskRegex = /You have an upcoming task/g;
+            let tMatch;
+            while ((tMatch = taskRegex.exec(text)) !== null) {
+                const before = text.slice(0, tMatch.index);
+                const beforeLines = before.split('\n').map(l => l.trim()).filter(Boolean);
+                const datePattern = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2}/;
+                const noise = ['Upcoming','Show more','Skip to','Task Record','Details for','Task','Status','Open','Type','Call','Phone','Email','Overdue'];
+                let due = 'No date';
+                let titleLine = '';
+                for (let i = beforeLines.length - 1; i >= 0; i--) {
+                    const ln = beforeLines[i];
+                    if (due === 'No date') { const dm = ln.match(datePattern); if (dm) { due = dm[0]; continue; } }
+                    if (!titleLine && ln.length > 3 && !datePattern.test(ln) && !noise.some(n => ln.startsWith(n))) { titleLine = ln; break; }
+                }
+                if (!titleLine || titleLine.toLowerCase().includes('skip to') || titleLine.toLowerCase().includes('navigation')) continue;
+                const after = text.slice(tMatch.index);
+                const afterLines = after.split('\n').map(l => l.trim()).filter(Boolean);
+                let comment = '';
+                const commIdx = afterLines.indexOf('Comment');
+                if (commIdx > -1 && commIdx+1 < afterLines.length) {
+                    const raw = afterLines[commIdx+1];
+                    const ignore = ['Task Record','Show','Status','Related','Details for','Open','Skip to','Type','Task'];
+                    const isMonthHeader = /^(January|February|March|April|May|June|July|August|September|October|November|December)\s[•·]\s\d{4}$/i.test(raw);
+                    if (raw && !isMonthHeader && !['This Month','Last Month','This Week','Last Week'].includes(raw) && !ignore.some(n => raw.startsWith(n))) comment = raw;
+                }
+                upcomingTasks.push(`- [${due}] ${titleLine}${comment ? ': '+comment : ''}`);
+            }
+            const blocks = text.split('Details for');
+            const activityLog = [];
+            blocks.forEach(block => {
+                if (!block.includes('Comment')) return;
+                if (block.includes('You have an upcoming task')) return;
+                const bLines = block.split('\n').map(l => l.trim()).filter(Boolean);
+                const bLinesAll = block.split('\n').map(l => l.trim());
+                const hasToday = bLinesAll.includes('Today');
+                const hasYesterday = bLinesAll.includes('Yesterday');
+                const dateMatch = block.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2}/);
+                const date = dateMatch ? dateMatch[0] : hasToday ? 'Today' : hasYesterday ? 'Yesterday' : 'Unknown Date';
+                const commIdx = bLines.indexOf('Comment');
+                if (commIdx < 0 || commIdx+1 >= bLines.length) return;
+                let noteContent = bLines.slice(commIdx+1).join(' ');
+                noteContent = noteContent.split('Show more actions')[0];
+                noteContent = noteContent.split('Task Record Type')[0];
+                noteContent = noteContent.replace(/(January|February|March|April|May|June|July|August|September|October|November|December)\s[•·]\s\d{4}/gi, '').replace(/(This|Last)\s(Month|Week)/g, '').trim();
+                const typeIdx = bLines.indexOf('Type');
+                const interactionType = (typeIdx > -1 && bLines[typeIdx+1] && !['Completed','Open','Task'].includes(bLines[typeIdx+1])) ? bLines[typeIdx+1] : '';
+                const titleNoise = ['Task','Phone Conversation','Email','Show more','Skip to','Completed','Open'];
+                const taskIdx = bLines.indexOf('Task');
+                let taskTitle = '';
+                if (taskIdx > -1) {
+                    for (let j = taskIdx + 1; j < Math.min(taskIdx + 4, bLines.length); j++) {
+                        const cand = bLines[j].replace(/\s*-\s*Marked as Complete$/i, '').trim();
+                        if (cand.length > 3 && !titleNoise.some(n => cand.startsWith(n)) && !cand.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d/) && cand !== 'Today' && cand !== 'Yesterday') { taskTitle = cand; break; }
+                    }
+                }
+                const label = taskTitle || interactionType || 'Note';
+                activityLog.push(`- [${date}] ${label}: ${noteContent}`);
+            });
+            let final = `ACCOUNT: ${accountName}\nOWNER: ${owner}\nPHONE: ${phone}\nRANK: ${rank}\nADDRESS: ${address}${county ? ', '+county+' County' : ''}\n\n`;
+            final += `FINANCIALS:\nOpen Opps Amount: ${openOppAmount}\nWon Opps Amount: ${wonOppAmount}\n\n`;
+            final += 'CONTACTS:\n';
+            if (contacts.length > 0) { contacts.forEach(c => { final += `- ${c.name}${c.title ? ' ('+c.title+')':''}${c.mobile ? ' | Mobile: '+c.mobile:''}${c.email ? ' | Email: '+c.email:''}\n`; }); }
+            else { final += 'No contacts found in dump.\n'; }
+            final += '\nOPPORTUNITY LIST:\n';
+            final += opportunities.length > 0 ? opportunities.join('\n') : 'No recent opportunities found in view.';
+            final += '\n\n';
+            if (upcomingTasks.length > 0) { final += 'TASKS:\n' + upcomingTasks.join('\n') + '\n\n'; }
+            final += 'RECENT ACTIVITY & NOTES (Most recent found):\n';
+            final += '(Note: any activity dated Jan 30 may be much older — dates were reset during a system migration.)\n';
+            final += activityLog.length > 0 ? activityLog.join('\n\n') : 'No notes/comments found in this dump.';
+            return final;
+        }
+
+        function parseAndPreparePrepInput() {
+            const raw = document.getElementById('prep-raw-input')?.value || '';
+            if (!raw.trim()) { alert('Please paste Salesforce text first.'); return; }
+            parsedPrepOutput = parseSalesforceDump(raw);
+            finishCRMParse();
+        }
+
+        async function parsePrepFromClipboard() {
+            if (!navigator.clipboard || !navigator.clipboard.readText) { showToast('Clipboard access not available'); return; }
+            try {
+                const clipText = await navigator.clipboard.readText();
+                if (!clipText || !clipText.trim()) { showToast('Clipboard is empty'); return; }
+                parsedPrepOutput = parseSalesforceDump(clipText);
+                finishCRMParse();
+            } catch (err) {
+                console.error('Clipboard read failed:', err);
+                showToast('Clipboard blocked — allow paste permissions');
+            }
+        }
+
+        function finishCRMParse() {
+            document.getElementById('crm-empty').classList.add('hidden');
+            document.getElementById('crm-parsed').classList.remove('hidden');
+            document.getElementById('crm-parsed-text').textContent = parsedPrepOutput;
+            currentTranscript = { text: parsedPrepOutput, language_code: 'en' };
+            renderPrepAiInstructions(parsedPrepOutput);
+            document.getElementById('submit-btn').disabled = false;
+            updateSubmitButton();
+            swapButtonFocus(true);
+            showToast('CRM parsed and loaded');
+        }
+
+        function repasteCRM() {
+            document.getElementById('crm-empty').classList.remove('hidden');
+            document.getElementById('crm-parsed').classList.add('hidden');
+            document.getElementById('gameplan-empty').classList.remove('hidden');
+            document.getElementById('gameplan-content').classList.add('hidden');
+            document.getElementById('gameplan-raw').classList.add('hidden');
+            parsedPrepOutput = '';
+            currentTranscript = null;
+            currentGamePlan = null;
+            hasCallTranscript = false;
+            document.getElementById('submit-btn').disabled = true;
+            swapButtonFocus(false);
+            updateSubmitButton();
+        }
+
+        function copyCRM() {
+            const text = document.getElementById('crm-parsed-text')?.textContent?.trim();
+            if (!text) return;
+            navigator.clipboard.writeText(text);
+            flashCopyBtn('copy-crm-btn', 'COPIED!');
+        }
+
+        // ═══ TRANSCRIPT RENDERING ═══
+        function renderTranscript(transcript) {
+            document.getElementById('transcript-empty').classList.add('hidden');
+            document.getElementById('transcript-content').classList.remove('hidden');
+            const el = document.getElementById('transcript-text');
+            el.contentEditable = true;
+            el.textContent = transcript.text;
+            el.addEventListener('blur', () => { if (currentTranscript) currentTranscript.text = el.textContent.trim(); });
+            document.getElementById('lang-badge').classList.remove('hidden');
+            document.getElementById('detected-lang').textContent = (transcript.language_code || 'en').toUpperCase();
+        }
+
+        function startManualEntry() {
+            document.getElementById('transcript-empty').classList.add('hidden');
+            document.getElementById('transcript-content').classList.remove('hidden');
+            const el = document.getElementById('transcript-text');
+            el.contentEditable = true;
+            el.textContent = '';
+            el.focus();
+            currentTranscript = { text: '', language_code: currentLanguage };
+            el.addEventListener('input', function handler() {
+                currentTranscript.text = el.textContent.trim();
+                const ok = currentTranscript.text.length > 30;
+                document.getElementById('submit-btn').disabled = !ok;
+                swapButtonFocus(ok);
+            });
+            document.getElementById('submit-btn').disabled = true;
+        }
+
+        // ═══ BUTTONS ═══
+        let hasCallTranscript = false;
+
+        function updateSubmitButton() {
+            const icon = document.getElementById('submit-btn-icon');
+            const text = document.getElementById('submit-btn-text');
+            if (!icon || !text) return;
+            if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) {
+                icon.className = 'fas fa-chess';
+                text.textContent = currentGamePlan ? 'REGENERATE PLAN' : 'GENERATE GAME PLAN';
+            } else {
+                icon.className = 'fas fa-robot';
+                text.textContent = 'SUMMARIZE FOR CRM';
+            }
+        }
+
+        function swapButtonFocus(ready) {
+            const tb = document.getElementById('transcribe-btn');
+            const sb = document.getElementById('submit-btn');
+            if (!tb || !sb) return;
+            const base = 'w-full transition-all text-white font-semibold py-2.5 rounded-2xl text-xs flex items-center justify-center gap-x-2 disabled:opacity-50 disabled:cursor-not-allowed';
+            const accent = flowMode === 'outbound' ? 'bg-purple-600 hover:bg-purple-500' : 'bg-emerald-600 hover:bg-emerald-500';
+            if (ready) {
+                tb.className = `${base} bg-zinc-800 hover:bg-zinc-700`;
+                sb.className = `${base} ${accent}`;
+            } else {
+                tb.className = `${base} ${accent}`;
+                sb.className = `${base} bg-zinc-800 hover:bg-zinc-700`;
+            }
+        }
+
+        function submitAction() {
+            if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) generateGamePlan();
+            else startSummary();
+        }
+
+        // ═══ GAME PLAN ═══
+        const STAGE_PIPELINE = [
+            { verb: 'REACTIVATE', label: 'Reactivate' },
+            { verb: 'NURTURE',    label: 'Nurture' },
+            { verb: 'DISCOVER',   label: 'Discover' },
+            { verb: 'UNCOVER',    label: 'Uncover' },
+            { verb: 'RECOVER',    label: 'Recover' },
+            { verb: 'ADVANCE',    label: 'Advance' },
+            { verb: 'CLOSE',      label: 'Close' },
+        ];
+
+        const STATIC_OBJECTIONS = [
+            { topic: 'Price',           ack: 'I completely understand. It\u2019s a significant investment and price absolutely matters.',            associate: "Many say the same thing. Even the most successful want to make sure the math works out before committing, which is just smart business.",                          ask: 'What would the numbers need to look like for this to work?' },
+            { topic: 'Timing',          ack: 'I agree, timing has to be right for this to work.',                         associate: "Usually, when founders tell me this, it's actually the perfect time to build the infrastructure. That way, when you are ready to scale, you aren't scrambling last minute.",                        ask: 'What specific milestones need to happen between now and XX/YY for you to feel ready?' },
+            { topic: 'Think about it',  ack: 'I highly encourage that. It\u2019s a big decision and you shouldn\u2019t rush it.',                associate: "That shows me you actually care about the outcome, which is smart and not an impolsive decision. I want everyone to think about it and choose once they understand the benfits of this purchase.",                        ask: "For your company in this case, does it come down to the financial side, the features, or a lack of trust in me or Vermeer?" },
+            { topic: 'Talk to partner', ack: 'That\u2019s great!',                      associate: "A unified, agreeing leadership/front is key to smooth company operations",                                                               ask: 'If your partner were sitting right here on the call with us, what is the number one question or skepticism you think they\u2019d have for me?' },
+            { topic: 'Competition',     ack: 'I think you absolutely should look at other options.',                       associate: "I actually prefer when clients shop around, because it makes our retention rate higher. When they see the difference side-by-side, they end up staying with us longer.",                 ask: 'What is the number one metric or feature you\u2019re optimizing for when comparing us to XYZ?' },
+            { topic: 'Too busy',        ack: 'I hear you, it\u2019s hard to consider new projects whe you\u2019ve got a lot going on',               associate: "the busiest owners I work with are usually the ones who benefit the most from improved infrastructures to remove any bottlenecks to free up their time.",                                     ask: 'are you too busy right now because business is booming and your systems are running perfectly, or are you too busy because you\u2019re stuck putting out the exact fires this is designed to fix? || If we were able to handle 90% of the heavy lifting for the integration so it took almost zero time away from your current workflow, would solving this be a priority for you this quarter?' },
+            { topic: 'Happy as is',     ack: "That's great to hear. Honestly, having a system that works is half the battle.",   associate: "I had many happy clients who ended up seeing the extra value and output that a Vermeer would bring and now they are a lot happier.",                     ask: 'Out of curiosity, on a scale of 1 to 10, how thrilled are you with the actual ROI of your current setup? (If they say 7 or 8, ask: "What would make it a 10?")' },
+            { topic: 'Bad experience',  ack: "I don\u2019t blame you at all for being hesitant. That sounds incredibly frustrating.",    associate: "It's unfortunately common in our industry. In fact, most of our current clients came to us specifically to clean up a mess left by another vendor.",                        ask: 'If you don\u2019t mind me asking, what was the biggest "drop-the-ball" moment with them so I can ensure we\u2019d never do the same to you?' },
+        ];
+
+        const OBJECTIVE_VERB_STYLES = {
+            'CLOSE':      { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+            'ADVANCE':    { bg: 'bg-purple-500/15',  text: 'text-purple-400',  border: 'border-purple-500/30'  },
+            'RECOVER':    { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/30'   },
+            'DISCOVER':   { bg: 'bg-blue-500/15',    text: 'text-blue-400',    border: 'border-blue-500/30'    },
+            'UNCOVER':    { bg: 'bg-cyan-500/15',    text: 'text-cyan-400',    border: 'border-cyan-500/30'    },
+            'NURTURE':    { bg: 'bg-teal-500/15',    text: 'text-teal-400',    border: 'border-teal-500/30'    },
+            'REACTIVATE': { bg: 'bg-orange-500/15',  text: 'text-orange-400',  border: 'border-orange-500/30'  },
+        };
+
+        function renderStageTrack(activeVerb, style) {
+            const track = document.getElementById('gp-stage-track');
+            const activeIdx = STAGE_PIPELINE.findIndex(s => s.verb === activeVerb);
+            const accentBg = style.text.replace('text-', 'bg-');
+            track.innerHTML = STAGE_PIPELINE.map((stage, i) => {
+                const isActive = stage.verb === activeVerb;
+                const isPast = i < activeIdx;
+                const bar = i < STAGE_PIPELINE.length - 1
+                    ? `<div class="w-8 h-[2px] rounded-full ${i < activeIdx ? accentBg + ' opacity-40' : 'bg-zinc-800'}"></div>`
+                    : '';
+                const dot = isActive
+                    ? `<div class="w-2 h-2 rounded-full ${accentBg}"></div>`
+                    : `<div class="w-[5px] h-[5px] rounded-full ${isPast ? 'bg-zinc-500' : 'bg-zinc-700'}"></div>`;
+                const label = `<span class="text-[9px] mt-1 ${isActive ? style.text + ' font-semibold' : isPast ? 'text-zinc-500' : 'text-zinc-600'}">${stage.label}</span>`;
+                return `<div class="flex items-center"><div class="flex flex-col items-center" style="min-width:44px">${dot}${label}</div>${bar}</div>`;
+            }).join('');
+        }
+
+        function parseSections(text) {
+            const sections = {};
+            const sectionRegex = /^(CONTEXT|OBJECTIVE|INTEL|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS|NEXT STEPS|CLOSE|OPENING APPROACH|OPENER)\s*:/gim;
+            const keys = [];
+            const positions = [];
+            let m;
+            while ((m = sectionRegex.exec(text)) !== null) {
+                keys.push(m[1].toUpperCase());
+                positions.push({ start: m.index, contentStart: m.index + m[0].length });
+            }
+            for (let i = 0; i < keys.length; i++) {
+                const end = i + 1 < positions.length ? positions[i + 1].start : text.length;
+                sections[keys[i]] = text.slice(positions[i].contentStart, end).trim();
+            }
+            return sections;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function linkify(html) {
+            html = html.replace(/\b(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-purple-400 hover:text-purple-300 underline">$1</a>');
+            html = html.replace(/(?<![\/\w@])([a-zA-Z0-9][-a-zA-Z0-9]*\.(com|net|org|io|co|biz|info|us|me))\b/g, '<a href="https://$1" target="_blank" class="text-purple-400 hover:text-purple-300 underline">$1</a>');
+            return html;
+        }
+
+        function bulletize(html) {
+            return html.replace(/^[\-\u2022]\s*/gm, '').replace(/(^|<br>)\s*(?=\S)/g, '$1<span class="inline-block w-1.5 h-1.5 rounded-full bg-zinc-600 mr-2 relative top-[-1px]"></span>');
+        }
+
+        function renderTalkingPoints(rawText) {
+            const lines = rawText.split('\n').map(l => l.replace(/^[\-\u2022\d.)\s]+/, '').trim()).filter(Boolean);
+            let num = 1;
+            return lines.map((line, i) => {
+                const escaped = linkify(escapeHtml(line));
+                const isBonus = /^IF YOU GET THROUGH/i.test(line);
+                if (isBonus) return `<div class="mt-3 pt-3 border-t border-zinc-700/50 text-[12px] text-zinc-400 italic">${escaped}</div>`;
+                return `<div class="flex items-start gap-3 ${i > 0 ? 'mt-3' : ''}"><span class="text-[11px] text-zinc-500 font-mono w-4 flex-shrink-0 mt-[1px] text-right">${num++}</span><span class="text-zinc-200">${escaped}</span></div>`;
+            }).join('');
+        }
+
+        function renderStaticObjections() {
+            return STATIC_OBJECTIONS.map((obj, i) => {
+                const line = `<span class="text-amber-400 font-semibold">${obj.topic}</span> `
+                    + `<span class="text-zinc-600">&rarr;</span> `
+                    + `<span class="text-zinc-400">"${escapeHtml(obj.ack)}"</span>`
+                    + ` + <span class="text-zinc-200">"${escapeHtml(obj.associate)}"</span>`
+                    + ` + <span class="text-sky-400/80">"${escapeHtml(obj.ask)}"</span>`;
+                return `<div class="flex items-start gap-2.5 ${i > 0 ? 'mt-2.5' : ''}"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-[7px] opacity-70"></span><span class="text-[11.5px] leading-relaxed">${line}</span></div>`;
+            }).join('');
+        }
+
+        function renderBullets(rawText, dotColor) {
+            const dc = dotColor || 'bg-zinc-500';
+            const lines = rawText.split('\n').map(l => l.replace(/^[\-\u2022]\s*/, '').trim()).filter(Boolean);
+            return lines.map((line, i) => {
+                const escaped = linkify(escapeHtml(line));
+                return `<div class="flex items-start gap-2.5 ${i > 0 ? 'mt-2' : ''}"><span class="w-1.5 h-1.5 rounded-full ${dc} flex-shrink-0 mt-[7px] opacity-70"></span><span>${escaped}</span></div>`;
+            }).join('');
+        }
+
+        function renderGamePlanText(text) {
+            const sections = parseSections(text);
+
+            // Objective banner
+            const objRaw = sections['OBJECTIVE'] || '';
+            const verbMatch = objRaw.match(/^(CLOSE|ADVANCE|RECOVER|DISCOVER|UNCOVER|NURTURE|REACTIVATE)\b\s*[—–\-]?\s*(.*)/i);
+            const verbEl = document.getElementById('gp-objective-verb');
+            const goalEl = document.getElementById('gp-objective-goal');
+            const wrapEl = document.getElementById('gp-objective-wrap');
+            let activeVerb = 'ADVANCE';
+            if (verbMatch) {
+                activeVerb = verbMatch[1].toUpperCase();
+                const goal = verbMatch[2].replace(/^-\s*/, '').trim();
+                const style = OBJECTIVE_VERB_STYLES[activeVerb] || OBJECTIVE_VERB_STYLES['ADVANCE'];
+                verbEl.textContent = activeVerb;
+                verbEl.className = `text-2xl font-bold tracking-[0.2em] uppercase ${style.text}`;
+                goalEl.textContent = goal;
+            } else {
+                verbEl.textContent = '';
+                goalEl.textContent = objRaw.replace(/^-\s*/, '').trim();
+                verbEl.className = 'hidden';
+            }
+
+            // Context
+            const ctxText = sections['CONTEXT'] || '';
+            document.getElementById('gp-context').innerHTML = renderBullets(ctxText, 'bg-zinc-500');
+
+            // Intel — always show
+            const intelText = sections['INTEL'] || '';
+            const intelWrap = document.getElementById('gp-intel-wrap');
+            intelWrap.classList.remove('hidden');
+            if (intelText && intelText.length > 5) {
+                document.getElementById('gp-intel').innerHTML = renderBullets(intelText, 'bg-zinc-500');
+            } else {
+                document.getElementById('gp-intel').innerHTML = '<span class="text-zinc-600 text-[11px]">No new intel found beyond CRM data.</span>';
+            }
+
+            // Talking Points — color gradient by sale stage
+            const tpText = sections['TALKING POINTS'] || sections['KEY TALKING POINTS'] || '';
+            document.getElementById('gp-questions').innerHTML = renderTalkingPoints(tpText);
+
+            // Objections — always show static AAA playbook
+            document.getElementById('gp-objections').innerHTML = renderStaticObjections();
+            document.getElementById('gp-objections-wrap').classList.remove('hidden');
+        }
+
+        async function generateGamePlan() {
+            if (!currentTranscript) { showToast('No CRM data available'); return; }
+            if (!XAI_KEY) { alert('Set your xAI key in Settings!'); openSettings(); return; }
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>GENERATING...';
+            try {
+                const text = document.getElementById('crm-parsed-text')?.textContent?.trim() || currentTranscript.text;
+                const result = await getGrokGamePlan(text);
+                currentGamePlan = result.gamePlan;
+                document.getElementById('gameplan-empty').classList.add('hidden');
+                document.getElementById('gameplan-content').classList.remove('hidden');
+                document.getElementById('gameplan-raw').classList.add('hidden');
+                document.getElementById('gameplan-panel-title').textContent = 'Your Game Plan';
+                renderGamePlanText(result.gamePlan);
+                document.getElementById('toggle-prompt-btn').classList.remove('hidden');
+
+
+                if (result.textMessage) {
+                    document.getElementById('text-msg-content').textContent = result.textMessage;
+                    const tmSection = document.getElementById('text-msg-section');
+                    tmSection.classList.remove('hidden');
+                    tmSection.className = tmSection.className.replace(/border-\S+/g, '').replace(/shadow-\S+/g, '').trim();
+                    if (result.recommended === 'text') {
+                        tmSection.classList.add('border', 'border-sky-400/70', 'shadow-[0_0_20px_rgba(56,189,248,0.35)]');
+                    } else {
+                        tmSection.classList.add('border', 'border-sky-500/10');
+                    }
+                } else { document.getElementById('text-msg-section').classList.add('hidden'); }
+                navigateTo('gameplan');
+                showToast(result.recommended === 'text' ? 'Grok says: just text this one' : 'Grok says: call this one');
+                updateSubmitButton();
+            } catch (err) {
+                console.error('Game plan error:', err);
+                showToast('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-robot" id="submit-btn-icon"></i><span id="submit-btn-text"></span>';
+                updateSubmitButton();
+            }
+        }
+
+        function renderPrepAiInstructions(clientNotes) {
+            if (flowMode !== 'outbound') return;
+            document.getElementById('gameplan-empty').classList.add('hidden');
+            document.getElementById('gameplan-content').classList.add('hidden');
+            document.getElementById('gameplan-raw').classList.remove('hidden');
+            document.getElementById('gameplan-panel-title').textContent = 'What Grok Will See';
+            document.getElementById('gameplan-text').textContent = buildGamePlanPrompt(clientNotes);
+            document.getElementById('toggle-prompt-btn').classList.add('hidden');
+            document.getElementById('text-msg-section').classList.add('hidden');
+            currentGamePlan = null;
+        }
+
+        function togglePromptView() {
+            showingPromptView = !showingPromptView;
+            const btn = document.getElementById('toggle-prompt-btn');
+            if (showingPromptView) {
+                document.getElementById('gameplan-content').classList.add('hidden');
+                document.getElementById('gameplan-raw').classList.remove('hidden');
+                document.getElementById('gameplan-text').textContent = buildGamePlanPrompt(parsedPrepOutput);
+                document.getElementById('gameplan-panel-title').textContent = 'What Grok Was Fed';
+                btn.innerHTML = '<i class="fas fa-chess mr-1"></i>Back to plan';
+            } else {
+                document.getElementById('gameplan-raw').classList.add('hidden');
+                document.getElementById('gameplan-content').classList.remove('hidden');
+                renderGamePlanText(currentGamePlan || '');
+                document.getElementById('gameplan-panel-title').textContent = 'Your Game Plan';
+                if (document.getElementById('text-msg-content').textContent.trim()) document.getElementById('text-msg-section').classList.remove('hidden');
+                btn.innerHTML = '<i class="fas fa-eye mr-1"></i>View prompt';
+            }
+        }
+
+        // ═══ VALUE PROPS ═══
+        function saveValueProps() {
+            localStorage.setItem('value_props', JSON.stringify(valueProps));
+        }
+
+        function renderValueProps() {
+            const list = document.getElementById('valueprops-list');
+            const empty = document.getElementById('valueprops-empty');
+            list.innerHTML = '';
+            if (valueProps.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            valueProps.forEach(prop => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-1.5 group';
+                row.innerHTML = `
+                    <button onclick="toggleValueProp('${prop.id}')" class="flex-1 text-left flex items-center gap-2 min-w-0 py-0.5">
+                        <div class="w-3 h-3 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${prop.active ? 'bg-amber-400 border-amber-400' : 'border-zinc-600'}">
+                            ${prop.active ? '<i class="fas fa-check text-black" style="font-size:6px"></i>' : ''}
+                        </div>
+                        <span class="text-[11px] leading-snug truncate transition-colors ${prop.active ? 'text-zinc-200' : 'text-zinc-500'}">${prop.text}</span>
+                    </button>
+                    <button onclick="deleteValueProp('${prop.id}')" class="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-all flex-shrink-0"><i class="fas fa-times text-[9px]"></i></button>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function showAddValueProp() {
+            document.getElementById('valueprop-add-row').classList.remove('hidden');
+            document.getElementById('valueprop-input').focus();
+        }
+
+        function hideAddValueProp() {
+            document.getElementById('valueprop-add-row').classList.add('hidden');
+            document.getElementById('valueprop-input').value = '';
+        }
+
+        function addValueProp() {
+            const input = document.getElementById('valueprop-input');
+            const text = input.value.trim();
+            if (!text) return;
+            valueProps.push({ id: Date.now().toString(), text, active: true });
+            saveValueProps();
+            renderValueProps();
+            hideAddValueProp();
+        }
+
+        function toggleValueProp(id) {
+            const prop = valueProps.find(p => p.id === id);
+            if (prop) { prop.active = !prop.active; saveValueProps(); renderValueProps(); }
+        }
+
+        function deleteValueProp(id) {
+            valueProps = valueProps.filter(p => p.id !== id);
+            saveValueProps();
+            renderValueProps();
+        }
+
+        function getActiveValueProps() {
+            return valueProps.filter(p => p.active).map(p => p.text);
+        }
+
+        function buildGamePlanPrompt(clientNotes) {
+            const activeProps = getActiveValueProps();
+            const valuePropBlock = activeProps.length > 0
+                ? `\nCURRENT VALUE PROPS (active promotions, events, and offers Edoardo can use right now):\n${activeProps.map(p => `- ${p}`).join('\n')}\n\nThe goal is NOT to pitch these directly. The goal is to use them to add genuine value — so Edoardo earns more trust, more goodwill, and becomes the obvious go-to when this client is ready to buy. Weave the most relevant ones naturally into TALKING POINTS, CONTEXT, or TEXT MESSAGE where they fit. Only use what's genuinely relevant to this specific client — don't force it.\n`
+                : '';
+            return `You are a sales strategist for Vermeer Southeast (large machinery, long sales cycles).
+
+FIRST LINE OF YOUR RESPONSE: Output exactly one signal and nothing else on that line:
+::CALL:: if the CRM notes show real opportunity, unresolved needs, active interest, something worth a live conversation, or even a small potential to drum up a future deal.
+::TEXT:: if the client is either upset, totally unable to make a purchase in any way, not looking for anything, and just needs a touchpoint to stay top of mind.
+Be honest. Then start the plan on the next line.
+
+CRITICAL LANGUAGE RULE (apply before writing anything):
+Look at the client's name and any notes. If the name is Spanish (e.g. Isidro, Mauricio, Juan, Jose, Carlos, Miguel, Luis, etc.) OR if any notes are in Spanish, then write the content of the following sections in Spanish: TALKING POINTS and TEXT MESSAGE. The section headers (MY QUESTION, OBJECTION, MY RESPONSE) stay in English. Everything inside those sections must be in Spanish for a Spanish-speaking client.
+
+About the Vermeer Southeast Inside Sales Rep (Edoardo):
+- Works from the office in GA. He does NOT do field visits. If a client needs to see equipment, they come to him. Default next steps are phone follow-ups, sending materials/videos, or inviting clients to the office.
+- Does NOT book "discovery calls." He just calls clients directly or they call in.
+- Typical clients are small businesses and owner-operators with anywhere from 0 to 7 machines. NOT big corporations.
+- Edoardo's goal: provide so much value that when clients are ready to buy, Vermeer Southeast is the obvious choice. Sound helpful, confident, normal.
+
+Client data (parsed Salesforce CRM notes):
+${clientNotes}
+${valuePropBlock}
+YOUR JOB: produce a practical game plan that moves the account forward from its current stage.
+Use the CRM data first. If details are sparse, infer carefully from notes and timeline.
+
+CRM ABBREVIATIONS: "CNA" = Call. No Answer (Edoardo called, the client did not pick up). Treat repeated CNAs as a signal the client is going dark or avoiding contact.
+
+CRITICAL ACCESS RULE: Before writing TALKING POINTS, check the CRM notes for who actually picks up the phone. If a gatekeeper (spouse, receptionist, assistant) consistently answers instead of the decision maker, the TALKING POINTS section must be split into two clearly labeled parts:
+
+GATEKEEPER (2 lines max):
+The only goals here are: (1) confirm the owner is around, and (2) get passed through or get a callback. Do NOT ask discovery questions to the gatekeeper — they can't answer them and it wastes the call. Keep it warm, brief, and human. Good gatekeeper lines: "Hey, is [owner] around by any chance?" / "I've been meaning to catch up with him — think he's got a few minutes?" / "No worries if not — is there a better time to try him directly?" That's it. Do not pitch. Do not ask about the business.
+
+IF YOU GET THROUGH TO [owner name] (5-7 sharp questions):
+Now go deep. These are the real questions — specific, high-signal, adapted from the bank below. Pick ones that cut to the core of where this account actually is. Don't waste the moment with small talk.
+
+If there is NO gatekeeper pattern — if Edoardo typically reaches the client directly — write TALKING POINTS as a single flat list of 5-7 questions with no split.
+
+Write in plain text only (no markdown, no asterisks, no bold).
+Keep it concise, high-signal, and natural.
+
+Format:
+CONTEXT:
+- 3-5 bullets covering the full account reality based ONLY on the CRM data. Include deal stage, active signals, risks, open opportunities, AND communication history. For comms: what was the last interaction, who reached out, what was said or promised, how long ago, whether the client has been responsive or going dark. Be specific and concrete. Examples: "Last talked Nov 3rd — he mentioned needing a service check, you promised to follow up with pricing." / "You've texted twice and left 3 VMs in the last 4 months with no response." / "Jose called in about a service issue — you took the call and said you'd check with the service team." Do NOT include web search findings here — that goes in INTEL.
+
+OBJECTIVE:
+- Start with one of these action verbs based on where the account actually is: CLOSE (ready to buy, just needs the push), ADVANCE (interested but needs to move to next stage), RECOVER (went cold or stalled, re-engage), DISCOVER (new or unclear needs, find out what they want), UNCOVER (there's something under the surface, dig deeper), NURTURE (nothing active, stay top of mind and add value), REACTIVATE (haven't talked in a long time, restart the relationship)
+- Then one sentence describing the specific goal for this call. e.g. "ADVANCE — get him to commit to coming in to see the SC70TX this week" or "DISCOVER — find out what equipment they're running and whether the chipper is due for replacement"
+
+INTEL:
+- Use your web search tool to look up the client's business and name. Search for: recent equipment purchases, state DOT/FMCSA registrations (reveal fleet owned), Google Business reviews, phone numbers if CRM has none.
+- ONLY include intel that adds something NEW that the CONTEXT does not already cover, or that CONTRADICTS something in the CRM/CONTEXT. If your search just confirms what the CONTEXT already says, skip this section entirely. Do not repeat context.
+
+RELATIONSHIP ASSESSMENT (internal — do NOT output this as a section):
+Read the CRM activity log and determine if this is an existing/warm client or a true first contact. Use this to guide your tone and stage in TALKING POINTS and TEXT MESSAGE. Never use cold openers on someone Edoardo has talked to before. This is the case 99% of the time.
+
+TALKING POINTS:
+Follow the CRITICAL ACCESS RULE above. If there's a gatekeeper, split into two parts as instructed. If no gatekeeper, write a flat list of 5-7 sharp questions adapted from the bank below — questions that cut straight to where this account actually is and move it forward. Don't pad with fluff or generic openers.
+
+Choose from this bank (Hormozi + Belfort) for the TALKING POINTS questions. Adapt naturally to this client. Mix from wherever fits.
+IMPORTANT: Pick the right opener bank based on your RELATIONSHIP ASSESSMENT above.
+
+INTELLIGENCE & DISCOVERY (move broad → specific — works for both warm and cold):
+- "What are you afraid of happening if you move forward?"
+- "What would it take to make this a yes?"
+- "Why aren't you going with the cheaper option down the street?"
+- "If the prices were exactly the same, which would you choose — ours or theirs — and why?"
+- "If this did nothing but [specific high-value result for this client], would it be worth it to you?"
+- "Have you looked at other solutions? What stopped you from moving forward?"
+- "What does your operation look like in 5 years if you keep doing exactly what you're doing now? Is that where you want to be?"
+- "Do you want this result to last for a long time? Do you think you'll be this busy again in the future?"
+- "Is [monthly price] a lot of money to you?"
+- "What part do you think your [spouse/partner] would not approve of?"
+- "If the roles were reversed and they needed this, would you support them? Then why wouldn't they support you?"
+- "If this were perfect, would you do it? Then what's the difference between perfection and what we've got?"
+- "Do you believe this will help you? Do you trust me to deliver? Do you think it'll work for you?" (if all yes: "Then what are we waiting for?")
+- "What have you done so far to solve this problem?"
+- "How long have you been struggling with this?"
+- "What is the biggest problem you're trying to solve right now?"
+- "Why haven't you solved it yet?"
+- "What's your main concern right now?"
+- "What variables are you using to make this decision?"
+- "How much have you already spent trying to solve this?"
+- "What happens if you don't solve this problem?"
+- "What makes this a yes for you? What makes this a no?"
+- "Do you think there's a possibility this isn't a fast decision — but you've actually been making the same decision for the past [X] years?"
+- "What will you be doing instead if you don't move forward today?"
+- "Do you know what you and every self-made billionaire have in common? You both started with nothing."
+- "Would you agree that you can tell a person's future by the things they spend their money on?"
+- "Which of these benefits is most important to you? [give options]"
+- "Is this a 'no' right now, or a 'not yet'?"
+- "What's the opportunity cost of not solving this?"
+- "Is this a top three priority for you right now?"
+- "How does this problem impact your [revenue / crew / stress personal life / family]?"
+- "What would have to happen for you to make a decision this week?"
+- "Help me understand – is this about the timing or the investment?"
+- "Given how things have been deteriorating, where do you see yourself one year, or even five years from now, if you don't take action to fix this?"
+- "What's your current [key metric — jobs per week, downtime, rental costs]?"
+- "On a scale of 1-10, how bad is this problem for you right now?"
+- "What is your biggest headache with your current [provider/situation]?"
+- "What would success look like for you in the next 90 days?"
+- "What made you look into this solution specifically?"
+- "What's the worst that could happen if you don't fix this?"
+- "If we could show you a way to get [result], would you be open to exploring it?"
+- "What's the worst part about [objection]?"
+- "What's the best that could happen if you do?"
+- "What would make this solution perfect for you?"
+- "Does that sound like a fit for what you're trying to accomplish?"
+- "Great — what questions do you have for me before we get going?"
+- "If we added [the one thing they said is missing], would you move forward with us?"
+- "Who else has had that concern and moved forward?"
+- "Tell me about your business and the biggest challenges you're facing right now."
+- "If money wasn't an issue, would you do this?"
+- "Do you want to get started today?"
+- "What's stopping you from solving this right now?"
+- "Are you in or are you out?"
+- "How much is this problem costing you every month?"
+- "Are you ready to make a change today?"
+- "On a scale of 1-10, how committed are you to fixing this?"
+- "What would need to happen for you to feel 100% confident moving forward?"
+- "Do you see how continuing as-is is more expensive than investing in the solution?"
+- "If we could guarantee [specific result] in [timeframe], would that be worth it to you?"
+
+(See language rule at top)
+
+TEXT MESSAGE:
+- 1-2 sentences Edoardo can text if they don't pick up or to kick off the convo. The goal is to make them want to respond — not to sell anything. Lead with genuine curiosity about their world, their situation, or something specific that happened last time. Ask a question that only they can answer, or say something that shows you were actually paying attention, or share a helpful insight as a friend. Never pitch, never push, never hint at a sale. Sound like a person who's just wondering, not a rep who's trying to move a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
+
+Keep the whole output practical and immediately usable.`;
+        }
+
+        async function getGrokGamePlan(clientNotes) {
+            const prompt = buildGamePlanPrompt(clientNotes);
+            const res = await fetch(XAI_PROXY + '/xai/responses', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${XAI_KEY}` },
+                body: JSON.stringify({ model:'grok-4-1-fast-reasoning', input:[{role:'user',content:prompt}], tools:[{type:'web_search'}], temperature:0.7, store:false })
+            });
+            if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(`xAI error (${res.status}): ${e.error?.message || res.statusText}`); }
+            const data = await res.json();
+            let fullResponse = '';
+            if (data.output) { for (const item of data.output) { if (item.type==='message'&&item.content) { for (const block of item.content) { if (block.type==='output_text') fullResponse += block.text; } } } }
+            if (!fullResponse) { fullResponse = data.output_text || (typeof data.output==='string' ? data.output : ''); }
+            fullResponse = fullResponse.trim();
+            if (!fullResponse) throw new Error('Empty response from xAI.');
+            let recommended = 'call';
+            const signalMatch = fullResponse.match(/^::(CALL|TEXT)::/im);
+            if (signalMatch) recommended = signalMatch[1].toLowerCase();
+            fullResponse = fullResponse.replace(/^::(?:CALL|TEXT)::\s*/im, '');
+            fullResponse = fullResponse.replace(/\[\[\d+\]\]/g,'').replace(/\[(\d+)\]/g,'').replace(/\(https?:\/\/\S+?\)/g,'').replace(/\([\s,]*\)/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+            let gamePlan = fullResponse;
+            const sectionHeaders = /\b(CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE)\s*:/gi;
+            gamePlan = gamePlan.replace(sectionHeaders, '\n\n$1:');
+            gamePlan = gamePlan.replace(/(CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE):\s*/gi, '$1:\n');
+            gamePlan = gamePlan.replace(/\s+-\s+/g, '\n- ');
+            gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();
+            let textMessage = '';
+            const tmMatch = gamePlan.match(/\n*TEXT MESSAGE:\n?([\s\S]*)$/i);
+            if (tmMatch) { textMessage = tmMatch[1].replace(/^-\s*/m,'').trim(); gamePlan = gamePlan.replace(/\n*TEXT MESSAGE:[\s\S]*$/i,'').trim(); }
+            return { gamePlan, textMessage, recommended };
+        }
+
+        // ═══ SUMMARY ═══
+        async function startSummary() {
+            const transcriptEl = document.getElementById('transcript-text');
+            if (transcriptEl && transcriptEl.textContent.trim()) {
+                if (!currentTranscript) currentTranscript = { text:'', language_code:currentLanguage };
+                currentTranscript.text = transcriptEl.textContent.trim();
+            }
+            if (!currentTranscript || !currentTranscript.text) { alert("No text to summarize! Record audio or type/paste text first."); return; }
+            if (!XAI_KEY) { alert('Set your xAI key in Settings!'); openSettings(); return; }
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span> SUMMARIZING...';
+            document.getElementById('status').classList.remove('hidden');
+            document.getElementById('status-text').textContent = 'Grok 4.1 Fast is analyzing...';
+            document.getElementById('progress-bar').style.width = '30%';
+            const text = currentTranscript.text;
+            document.getElementById('postcall-empty').classList.add('hidden');
+            document.getElementById('postcall-content').classList.remove('hidden');
+            document.getElementById('summary-title-bar').classList.add('hidden');
+            document.getElementById('next-step-section').classList.add('hidden');
+            document.getElementById('followup-section').classList.add('hidden');
+            document.getElementById('summary-text').innerHTML = '<div class="flex items-center gap-x-2 text-zinc-600 text-xs"><span class="animate-spin inline-block w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full"></span><span>Summarizing...</span></div>';
+            document.getElementById('coach-empty').classList.add('hidden');
+            document.getElementById('coaching-content').classList.remove('hidden');
+            document.getElementById('coaching-text').innerHTML = '<div class="flex items-center gap-x-2 text-zinc-600 text-xs"><span class="animate-spin inline-block w-3 h-3 border border-amber-500/50 border-t-transparent rounded-full"></span><span>Coaching loading...</span></div>';
+            navigateTo('postcall');
+            try {
+                document.getElementById('progress-bar').style.width = '60%';
+                const rawSummary = await getGrokSummary(text);
+                renderSummary(rawSummary);
+                document.getElementById('status-text').textContent = 'Summary ready!';
+                getGrokCoaching(text, getCallType()).catch(err => { console.error('Coaching error:', err); document.getElementById('coaching-text').textContent = 'Coaching unavailable: ' + err.message; });
+                document.getElementById('progress-bar').style.width = '100%';
+                setTimeout(() => document.getElementById('status').classList.add('hidden'), 800);
+            } catch (err) {
+                console.error('Summary error:', err);
+                alert('Summary failed: ' + (err.message || err));
+                document.getElementById('status').classList.add('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-robot" id="submit-btn-icon"></i><span id="submit-btn-text">SUMMARIZE FOR CRM</span>';
+            }
+        }
+
+        async function getGrokSummary(text) {
+            const instructions = getSummaryPrompt();
+            const callType = getCallType();
+            const context = callType ? `\nInteraction type: ${callType}\n` : '';
+            const today = new Date();
+            const todayStr = `${today.getMonth()+1}/${today.getDate()}/${String(today.getFullYear()).slice(2)}`;
+            const crmData = parsedPrepOutput || '';
+            const gamePlanCtx = currentGamePlan ? `\nGame plan going into this call:\n${currentGamePlan}\n` : '';
+            const titleInstruction = `\nStructure your response exactly like this — no deviations:
+Line 1 → TITLE: [2-5 word title for the interaction — e.g. "LVM to Gilberto", "Inquired about ML150", "Pushed Spring Purchase"]
+Blank line
+The bullet-point summary
+Blank line
+NEXT STEP: [the single most important follow-up action, 3-8 words. Base this on something that came up in the call OR if there was an existing open task in the CRM, update/improve it based on what you learned. If nothing new came up, carry the existing task forward with better wording if possible. e.g. "Check w service about BC1500 update", "Send fertilizer spreader specs", "Follow up on machine hours"]
+NEXT STEP COMMENT: [only include this line if a short sentence of context genuinely helps; omit it entirely if the title is self-explanatory]
+FOLLOW UP: [output an exact date in M/D/YY format. Today is ${todayStr}. Use account rank and call outcome to decide timing:
+- A rank or hot active deal: 1-7 days out
+- B rank or warm interest: 1-2 weeks out
+- C-D rank or nothing happening: 2-3+ (even 6 if just useless) months out
+- If the client said to call back at a specific time, use that instead.
+Just the date, nothing else. e.g. "3/3/26" or "5/20/26"]`;
+            const crmContext = crmData ? `\nCRM data for this account:\n${crmData}\n` : '';
+            const prompt = `${instructions}${titleInstruction}\n${context}${crmContext}${gamePlanCtx}\nTranscript:\n${text}`;
+            const res = await fetch(XAI_PROXY + '/xai/chat/completions', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${XAI_KEY}`},
+                body: JSON.stringify({ model:"grok-4-1-fast-reasoning", messages:[{role:"user",content:prompt}], temperature:0.3, max_tokens:800 })
+            });
+            if (!res.ok) throw new Error('Grok API error: ' + res.status);
+            const data = await res.json();
+            return data.choices[0].message.content;
+        }
+
+        function renderSummary(summary) {
+            document.getElementById('postcall-empty').classList.add('hidden');
+            document.getElementById('postcall-content').classList.remove('hidden');
+            let title = '', body = summary;
+            const titleMatch = summary.match(/^TITLE:\s*(.+?)[\r\n]/);
+            if (titleMatch) { title = titleMatch[1].trim(); body = summary.slice(titleMatch[0].length).replace(/^\s*\n/,'').trim(); }
+            if (title) { document.getElementById('summary-title-text').textContent = title; document.getElementById('summary-title-bar').classList.remove('hidden'); }
+            else { document.getElementById('summary-title-bar').classList.add('hidden'); }
+            let followUp = '';
+            const fuMatch = body.match(/\n?FOLLOW UP:\s*(.+?)(\n|$)/i);
+            if (fuMatch) { followUp = fuMatch[1].trim(); body = body.replace(/\n?FOLLOW UP:\s*.+?(\n|$)/i,'').trim(); }
+            let nextStepComment = '';
+            const cmMatch = body.match(/\n?NEXT STEP COMMENT:\s*(.+?)(\n|$)/i);
+            if (cmMatch) { nextStepComment = cmMatch[1].trim(); body = body.replace(/\n?NEXT STEP COMMENT:\s*.+?(\n|$)/i,'').trim(); }
+            let nextStepTitle = '';
+            const nsMatch = body.match(/\n?NEXT STEP:\s*(.+?)(\n|$)/i);
+            if (nsMatch) { nextStepTitle = nsMatch[1].trim(); body = body.replace(/\n?NEXT STEP:\s*.+?(\n|$)/i,'').trim(); }
+            document.getElementById('summary-text').innerHTML = body.replace(/\n/g,'<br>');
+            currentSummary = body;
+            if (nextStepTitle) {
+                document.getElementById('next-step-title').textContent = nextStepTitle;
+                if (nextStepComment) { document.getElementById('next-step-comment').textContent = nextStepComment; document.getElementById('next-step-comment-wrap').classList.remove('hidden'); }
+                else { document.getElementById('next-step-comment-wrap').classList.add('hidden'); }
+                document.getElementById('next-step-section').classList.remove('hidden');
+            } else { document.getElementById('next-step-section').classList.add('hidden'); }
+            if (followUp) { document.getElementById('followup-date').textContent = followUp; document.getElementById('followup-section').classList.remove('hidden'); }
+            else { document.getElementById('followup-section').classList.add('hidden'); }
+        }
+
+        // ═══ COACHING ═══
+        async function getGrokCoaching(transcriptText, callType) {
+            const gamePlanContext = currentGamePlan
+                ? `Game plan Edoardo had going into this interaction:\n${currentGamePlan}`
+                : 'No game plan was prepared for this interaction.';
+            const interactionType = callType || (flowMode === 'outbound' ? 'Outbound call' : 'Inbound interaction');
+            const prompt = `You are a blunt sales coach for Edoardo, a rep at Vermeer Southeast (heavy machinery, long sales cycles).
+
+Interaction type: ${interactionType}
+Direction: ${flowMode === 'outbound' ? 'Edoardo called them' : 'They called or walked in'}
+
+${gamePlanContext}
+
+What actually happened:
+${transcriptText}
+
+If this was purely logistical — confirming a detail, passing along info, no sales intent — just write: "Admin interaction. Nothing to coach."
+
+If there was any sales intent, give him three specific improvements only. No more. For each one: say exactly what happened, why it was weak, and give him the actual words he should have said instead. Be brutally direct — no softening, no encouragement for average moves.
+
+After the three improvements, only if he asked a genuinely sharp question (one that uncovered pain, isolated an objection, or moved things forward), call it out in one sentence. If there were no good questions, skip this entirely.
+
+Plain text only. No markdown, no asterisks, no bullet symbols.`;
+            const res = await fetch(XAI_PROXY + '/xai/chat/completions', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${XAI_KEY}`},
+                body: JSON.stringify({ model:"grok-4-1-fast-reasoning", messages:[{role:"user",content:prompt}], temperature:0.4, max_tokens:700 })
+            });
+            if (!res.ok) throw new Error('Coaching API error: ' + res.status);
+            const data = await res.json();
+            currentCoaching = data.choices[0].message.content.trim();
+            renderCoaching(currentCoaching);
+            return currentCoaching;
+        }
+
+        function renderCoaching(coaching) {
+            document.getElementById('coach-empty').classList.add('hidden');
+            document.getElementById('coaching-content').classList.remove('hidden');
+            document.getElementById('coaching-text').innerHTML = coaching.replace(/\n/g,'<br>');
+        }
+
+        // ═══ COPY / DOWNLOAD ═══
+        function copyGamePlan() { const t = currentGamePlan?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-gameplan-btn','COPIED!'); }
+        function copyTextMessage() { const t = document.getElementById('text-msg-content')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-text-msg-btn','COPIED!'); }
+        function copyTranscript() { const t = document.getElementById('transcript-text')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-transcript-btn','COPIED!'); showToast('Transcript copied!'); }
+        function copySummary() { if(!currentSummary)return; navigator.clipboard.writeText(currentSummary); flashCopyBtn('copy-summary-btn','COPIED!'); showToast('Summary copied!'); }
+        function copyNextStepTitle() { const t = document.getElementById('next-step-title')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-next-step-title-btn','COPIED!'); }
+        function copyNextStepComment() { const t = document.getElementById('next-step-comment')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-next-step-comment-btn','COPIED!'); }
+        function copyFollowUp() { const t = document.getElementById('followup-date')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-followup-btn','COPIED!'); }
+        function copyCoaching() { if(!currentCoaching)return; navigator.clipboard.writeText(currentCoaching); flashCopyBtn('copy-coaching-btn','COPIED!'); }
+
+        function flashCopyBtn(id, flashText) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            const color = flowMode === 'outbound' ? 'text-purple-400' : 'text-emerald-400';
+            const orig = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-check"></i> ${flashText}`;
+            btn.classList.add(color);
+            setTimeout(() => { btn.innerHTML = orig; btn.classList.remove(color); }, 1500);
+        }
+
+        function downloadTranscript() { const t = document.getElementById('transcript-text')?.textContent?.trim(); if(t) downloadFile(t, `transcript-${Date.now()}.txt`, 'text/plain'); }
+        function downloadSummary() { if(currentSummary) downloadFile(currentSummary, `crm-summary-${Date.now()}.txt`, 'text/plain'); }
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content],{type});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click();
+            a.remove(); URL.revokeObjectURL(url);
+        }
+
+        // ═══ TOAST ═══
+        function showToast(msg) {
+            const t = document.createElement('div');
+            const bc = (flowMode === 'outbound') ? 'border-purple-500' : 'border-emerald-500';
+            const tc = (flowMode === 'outbound') ? 'text-purple-400' : 'text-emerald-400';
+            t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900 border ${bc} ${tc} px-6 py-3 rounded-3xl text-sm shadow-2xl flex items-center gap-3 z-50 toast-enter`;
+            t.innerHTML = `<i class="fas fa-check"></i> ${msg}`;
+            document.body.appendChild(t);
+            setTimeout(() => { t.classList.remove('toast-enter'); t.classList.add('toast-exit'); t.addEventListener('animationend', () => t.remove()); }, 2200);
+        }
+
+        function clearAll() { if (confirm('Start fresh?')) window.location.reload(); }
+
+        // ═══ KEYBOARD ═══
+        document.addEventListener('keydown', e => {
+            const a = document.activeElement;
+            const isInput = a && (a.tagName==='INPUT' || a.tagName==='TEXTAREA');
+            const isEdit = a && a.getAttribute('contenteditable') === 'true';
+            if (e.key === 'Escape') { if (isRecording) stopRecording(); closeSettings(); }
+            if (!isInput && !isEdit && e.key.toLowerCase() === 'r' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); if (flowMode) toggleRecording(); }
+            if (!isInput && !isEdit && flowMode) {
+                if (e.key === 'ArrowLeft' && !e.metaKey) { e.preventDefault(); navPanel(-1); }
+                if (e.key === 'ArrowRight' && !e.metaKey) { e.preventDefault(); navPanel(1); }
+            }
+        });
+
+        // ═══ INIT ═══
+        window.onload = () => {
+            document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
+            localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
+            renderValueProps();
+            if (!GROQ_KEY || GROQ_KEY.length < 10) {
+                setTimeout(() => { showToast('Set your API keys to get started'); openSettings(); }, 800);
+            }
+        };
+    </script>
+</body>
+</html>
