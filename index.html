@@ -434,9 +434,14 @@
                               class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-[11px] text-zinc-300 leading-relaxed resize-none focus:outline-none focus:border-zinc-500/50 transcript-scroll"></textarea>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-zinc-800 flex gap-x-3">
+            <div class="px-6 py-4 border-t border-zinc-800 space-y-3">
+                <button id="touchid-unlock-btn" onclick="unlockWithTouchID()" class="hidden w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-2.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors">
+                    <i class="fas fa-fingerprint"></i> UNLOCK WITH TOUCH ID
+                </button>
+                <div class="flex gap-x-3">
                 <button onclick="saveKeys()" class="flex-1 bg-white text-black font-semibold py-2.5 rounded-2xl text-sm hover:bg-zinc-100">SAVE</button>
                 <button onclick="testKeys()" class="flex-1 border border-zinc-700 font-medium py-2.5 rounded-2xl text-sm hover:bg-zinc-800">TEST</button>
+                </div>
             </div>
         </div>
     </div>
@@ -751,7 +756,11 @@ Write in English even if the call was in Spanish.`;
             document.getElementById('groq-key').value = GROQ_KEY;
             document.getElementById('access-pin').value = ACCESS_PIN;
             document.getElementById('xai-key').value = XAI_KEY;
-            if (window.PublicKeyCredential) document.getElementById('touchid-btn').classList.remove('hidden');
+            if (window.PublicKeyCredential) {
+                document.getElementById('touchid-btn').classList.remove('hidden');
+                if (!ACCESS_PIN || !GROQ_KEY) document.getElementById('touchid-unlock-btn').classList.remove('hidden');
+                else document.getElementById('touchid-unlock-btn').classList.add('hidden');
+            }
         }
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveKeys() {
@@ -834,6 +843,19 @@ Write in English even if the call was in Spanish.`;
                 console.log('Touch ID auth skipped:', e.message);
             }
             return null;
+        }
+
+        async function unlockWithTouchID() {
+            const creds = await tryTouchID();
+            if (creds) {
+                if (creds.pin) { ACCESS_PIN = creds.pin; localStorage.setItem('access_pin', ACCESS_PIN); document.getElementById('access-pin').value = ACCESS_PIN; }
+                if (creds.groq) { GROQ_KEY = creds.groq; localStorage.setItem('groq_key', GROQ_KEY); document.getElementById('groq-key').value = GROQ_KEY; }
+                showToast('Unlocked with Touch ID');
+                document.getElementById('touchid-unlock-btn').classList.add('hidden');
+                closeSettings();
+            } else {
+                showToast('Touch ID failed — enter manually');
+            }
         }
 
         function toggleKeyVis(inputId, btn) {
@@ -1831,14 +1853,6 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
-            if (!ACCESS_PIN || !GROQ_KEY) {
-                const creds = await tryTouchID();
-                if (creds) {
-                    if (creds.pin && !ACCESS_PIN) { ACCESS_PIN = creds.pin; localStorage.setItem('access_pin', ACCESS_PIN); }
-                    if (creds.groq && !GROQ_KEY) { GROQ_KEY = creds.groq; localStorage.setItem('groq_key', GROQ_KEY); }
-                    showToast('Unlocked with Touch ID');
-                }
-            }
             if (!GROQ_KEY || GROQ_KEY.length < 10 || !ACCESS_PIN) {
                 setTimeout(() => { showToast('Set your settings to get started'); openSettings(); }, 800);
             }
