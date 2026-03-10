@@ -1191,27 +1191,6 @@ Write in English even if the call was in Spanish.`;
         }
 
         // ═══ GAME PLAN ═══
-        const STAGE_PIPELINE = [
-            { verb: 'REACTIVATE', label: 'Reactivate' },
-            { verb: 'NURTURE',    label: 'Nurture' },
-            { verb: 'DISCOVER',   label: 'Discover' },
-            { verb: 'UNCOVER',    label: 'Uncover' },
-            { verb: 'RECOVER',    label: 'Recover' },
-            { verb: 'ADVANCE',    label: 'Advance' },
-            { verb: 'CLOSE',      label: 'Close' },
-        ];
-
-        const STATIC_OBJECTIONS = [
-            { topic: 'Price',           ack: 'I completely understand. It\u2019s a significant investment and price absolutely matters.',            associate: "Many say the same thing. Even the most successful want to make sure the math works out before committing, which is just smart business.",                          ask: 'What would the numbers need to look like for this to work?' },
-            { topic: 'Timing',          ack: 'I agree, timing has to be right for this to work.',                         associate: "Usually, when founders tell me this, it's actually the perfect time to build the infrastructure. That way, when you are ready to scale, you aren't scrambling last minute.",                        ask: 'What specific milestones need to happen between now and XX/YY for you to feel ready?' },
-            { topic: 'Think about it',  ack: 'I highly encourage that. It\u2019s a big decision and you shouldn\u2019t rush it.',                associate: "That shows me you actually care about the outcome, which is smart and not an impolsive decision. I want everyone to think about it and choose once they understand the benfits of this purchase.",                        ask: "For your company in this case, does it come down to the financial side, the features, or a lack of trust in me or Vermeer?" },
-            { topic: 'Talk to partner', ack: 'That\u2019s great!',                      associate: "A unified, agreeing leadership/front is key to smooth company operations",                                                               ask: 'If your partner were sitting right here on the call with us, what is the number one question or skepticism you think they\u2019d have for me?' },
-            { topic: 'Competition',     ack: 'I think you absolutely should look at other options.',                       associate: "I actually prefer when clients shop around, because it makes our retention rate higher. When they see the difference side-by-side, they end up staying with us longer.",                 ask: 'What is the number one metric or feature you\u2019re optimizing for when comparing us to XYZ?' },
-            { topic: 'Too busy',        ack: 'I hear you, it\u2019s hard to consider new projects whe you\u2019ve got a lot going on',               associate: "the busiest owners I work with are usually the ones who benefit the most from improved infrastructures to remove any bottlenecks to free up their time.",                                     ask: 'are you too busy right now because business is booming and your systems are running perfectly, or are you too busy because you\u2019re stuck putting out the exact fires this is designed to fix? || If we were able to handle 90% of the heavy lifting for the integration so it took almost zero time away from your current workflow, would solving this be a priority for you this quarter?' },
-            { topic: 'Happy as is',     ack: "That's great to hear. Honestly, having a system that works is half the battle.",   associate: "I had many happy clients who ended up seeing the extra value and output that a Vermeer would bring and now they are a lot happier.",                     ask: 'Out of curiosity, on a scale of 1 to 10, how thrilled are you with the actual ROI of your current setup? (If they say 7 or 8, ask: "What would make it a 10?")' },
-            { topic: 'Bad experience',  ack: "I don\u2019t blame you at all for being hesitant. That sounds incredibly frustrating.",    associate: "It's unfortunately common in our industry. In fact, most of our current clients came to us specifically to clean up a mess left by another vendor.",                        ask: 'If you don\u2019t mind me asking, what was the biggest "drop-the-ball" moment with them so I can ensure we\u2019d never do the same to you?' },
-        ];
-
         const OBJECTIVE_VERB_STYLES = {
             'CLOSE':      { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
             'ADVANCE':    { bg: 'bg-purple-500/15',  text: 'text-purple-400',  border: 'border-purple-500/30'  },
@@ -1221,24 +1200,6 @@ Write in English even if the call was in Spanish.`;
             'NURTURE':    { bg: 'bg-teal-500/15',    text: 'text-teal-400',    border: 'border-teal-500/30'    },
             'REACTIVATE': { bg: 'bg-orange-500/15',  text: 'text-orange-400',  border: 'border-orange-500/30'  },
         };
-
-        function renderStageTrack(activeVerb, style) {
-            const track = document.getElementById('gp-stage-track');
-            const activeIdx = STAGE_PIPELINE.findIndex(s => s.verb === activeVerb);
-            const accentBg = style.text.replace('text-', 'bg-');
-            track.innerHTML = STAGE_PIPELINE.map((stage, i) => {
-                const isActive = stage.verb === activeVerb;
-                const isPast = i < activeIdx;
-                const bar = i < STAGE_PIPELINE.length - 1
-                    ? `<div class="w-8 h-[2px] rounded-full ${i < activeIdx ? accentBg + ' opacity-40' : 'bg-zinc-800'}"></div>`
-                    : '';
-                const dot = isActive
-                    ? `<div class="w-2 h-2 rounded-full ${accentBg}"></div>`
-                    : `<div class="w-[5px] h-[5px] rounded-full ${isPast ? 'bg-zinc-500' : 'bg-zinc-700'}"></div>`;
-                const label = `<span class="text-[9px] mt-1 ${isActive ? style.text + ' font-semibold' : isPast ? 'text-zinc-500' : 'text-zinc-600'}">${stage.label}</span>`;
-                return `<div class="flex items-center"><div class="flex flex-col items-center" style="min-width:44px">${dot}${label}</div>${bar}</div>`;
-            }).join('');
-        }
 
         function parseSections(text) {
             const sections = {};
@@ -1265,10 +1226,6 @@ Write in English even if the call was in Spanish.`;
             html = html.replace(/\b(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-purple-400 hover:text-purple-300 underline">$1</a>');
             html = html.replace(/(?<![\/\w@])([a-zA-Z0-9][-a-zA-Z0-9]*\.(com|net|org|io|co|biz|info|us|me))\b/g, '<a href="https://$1" target="_blank" class="text-purple-400 hover:text-purple-300 underline">$1</a>');
             return html;
-        }
-
-        function bulletize(html) {
-            return html.replace(/^[\-\u2022]\s*/gm, '').replace(/(^|<br>)\s*(?=\S)/g, '$1<span class="inline-block w-1.5 h-1.5 rounded-full bg-zinc-600 mr-2 relative top-[-1px]"></span>');
         }
 
         function renderTalkingPoints(rawText) {
@@ -1330,17 +1287,6 @@ Write in English even if the call was in Spanish.`;
                 </div>`;
             }
             return html;
-        }
-
-        function renderStaticObjections() {
-            return STATIC_OBJECTIONS.map((obj, i) => {
-                const line = `<span class="text-amber-400 font-semibold">${obj.topic}</span> `
-                    + `<span class="text-zinc-600">&rarr;</span> `
-                    + `<span class="text-zinc-400">"${escapeHtml(obj.ack)}"</span>`
-                    + ` + <span class="text-zinc-200">"${escapeHtml(obj.associate)}"</span>`
-                    + ` + <span class="text-sky-400/80">"${escapeHtml(obj.ask)}"</span>`;
-                return `<div class="flex items-start gap-2.5 ${i > 0 ? 'mt-2.5' : ''}"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-[7px] opacity-70"></span><span class="text-[11.5px] leading-relaxed">${line}</span></div>`;
-            }).join('');
         }
 
         function renderBullets(rawText, dotColor) {
