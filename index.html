@@ -298,10 +298,6 @@
                                         <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Intel</div>
                                         <div id="gp-intel" class="text-[12px] text-zinc-300 leading-relaxed"></div>
                                     </div>
-                                    <div id="gp-phases-wrap" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3">
-                                        <div class="text-[10px] uppercase tracking-widest text-purple-400 font-semibold mb-2">Your Script</div>
-                                        <div id="gp-phases" class="text-[12px] text-zinc-200 leading-relaxed"></div>
-                                    </div>
                                     <div id="text-msg-section" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3 border border-sky-500/10">
                                         <div class="flex items-center justify-between mb-2">
                                             <span class="text-[10px] uppercase tracking-widest text-sky-400 font-semibold">Quick Text</span>
@@ -1218,7 +1214,7 @@ Write in English even if the call was in Spanish.`;
 
         function parseSections(text) {
             const sections = {};
-            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS|NEXT STEPS|CLOSE|OPENING APPROACH|OPENER|GATEKEEPER|OPENING|RE-DISCOVERY|HANDLE AMBIGUITY|BRIDGE TO VALUE|LOCK NEXT STEP|IF YOU GET THROUGH[^:]*)\s*:/gim;
+            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL)\s*:/gim;
             const keys = [];
             const positions = [];
             let m;
@@ -1240,67 +1236,6 @@ Write in English even if the call was in Spanish.`;
         function linkify(html) {
             html = html.replace(/\b(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-purple-400 hover:text-purple-300 underline">$1</a>');
             html = html.replace(/(?<![\/\w@])([a-zA-Z0-9][-a-zA-Z0-9]*\.(com|net|org|io|co|biz|info|us|me))\b/g, '<a href="https://$1" target="_blank" class="text-purple-400 hover:text-purple-300 underline">$1</a>');
-            return html;
-        }
-
-        function renderTalkingPoints(rawText) {
-            const lines = rawText.split('\n').map(l => l.replace(/^[\-\u2022\d.)\s]+/, '').trim()).filter(Boolean);
-            let num = 1;
-            return lines.map((line, i) => {
-                const escaped = linkify(escapeHtml(line));
-                const isBonus = /^IF YOU GET THROUGH/i.test(line);
-                if (isBonus) return `<div class="mt-3 pt-3 border-t border-zinc-700/50 text-[12px] text-zinc-400 italic">${escaped}</div>`;
-                return `<div class="flex items-start gap-3 ${i > 0 ? 'mt-3' : ''}"><span class="text-[11px] text-zinc-500 font-mono w-4 flex-shrink-0 mt-[1px] text-right">${num++}</span><span class="text-zinc-200">${escaped}</span></div>`;
-            }).join('');
-        }
-
-        const PLAYBOOK_PHASES = [
-            { key: 'GATEKEEPER',       label: 'Gatekeeper',       color: 'zinc',    icon: 'fa-shield-halved', num: null },
-            { key: 'OPENING',          label: 'Opening',          color: 'blue',    icon: 'fa-door-open',     num: '1' },
-            { key: 'RE-DISCOVERY',     label: 'Re-Discovery',     color: 'cyan',    icon: 'fa-stethoscope',   num: '2' },
-            { key: 'HANDLE AMBIGUITY', label: 'Handle Ambiguity', color: 'amber',   icon: 'fa-scale-balanced', num: '3' },
-            { key: 'BRIDGE TO VALUE',  label: 'Bridge to Value',  color: 'emerald', icon: 'fa-bridge',        num: '4' },
-            { key: 'LOCK NEXT STEP',   label: 'Lock Next Step',   color: 'purple',  icon: 'fa-lock',          num: '5' },
-        ];
-
-        function renderCallPlaybook(sections) {
-            let html = '';
-            const ifGetThrough = Object.keys(sections).find(k => /^IF YOU GET THROUGH/i.test(k));
-
-            for (const phase of PLAYBOOK_PHASES) {
-                const content = sections[phase.key];
-                if (!content && phase.key !== 'GATEKEEPER') continue;
-                if (phase.key === 'GATEKEEPER') {
-                    const gk = sections['GATEKEEPER'];
-                    if (!gk) continue;
-                    const lines = gk.split('\n').map(l => l.replace(/^[\-\u2022]\s*/, '').trim()).filter(Boolean);
-                    const body = lines.map((line, i) => {
-                        const escaped = linkify(escapeHtml(line));
-                        return `<div class="flex items-start gap-2.5 ${i > 0 ? 'mt-2' : ''}"><span class="w-1.5 h-1.5 rounded-full bg-zinc-500/50 flex-shrink-0 mt-[7px]"></span><span>${escaped}</span></div>`;
-                    }).join('');
-                    html += `<div class="bg-zinc-800/40 rounded-xl px-4 py-3 border border-zinc-700/30 mb-3">
-                        <div class="flex items-center gap-2 mb-2"><i class="fa-solid fa-shield-halved text-[10px] text-zinc-400"></i><span class="text-[10px] uppercase tracking-widest text-zinc-400 font-semibold">Gatekeeper</span></div>
-                        <div class="text-[12px] text-zinc-300 leading-relaxed">${body}</div>
-                    </div>`;
-                    if (ifGetThrough) {
-                        html += `<div class="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mb-2 mt-1 pl-1"><i class="fa-solid fa-arrow-down mr-1.5 text-[8px]"></i>${escapeHtml(ifGetThrough)}</div>`;
-                    }
-                    continue;
-                }
-
-                const numBadge = phase.num
-                    ? `<span class="text-[9px] font-bold text-${phase.color}-400 bg-${phase.color}-500/10 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">${phase.num}</span>`
-                    : '';
-                const lines = content.split('\n').map(l => l.replace(/^[\-\u2022]\s*/, '').trim()).filter(Boolean);
-                const body = lines.map((line, i) => {
-                    const escaped = linkify(escapeHtml(line));
-                    return `<div class="flex items-start gap-2.5 ${i > 0 ? 'mt-2' : ''}"><span class="w-1.5 h-1.5 rounded-full bg-${phase.color}-500/50 flex-shrink-0 mt-[7px]"></span><span>${escaped}</span></div>`;
-                }).join('');
-                html += `<div class="bg-zinc-900/60 rounded-xl px-4 py-3 mb-3">
-                    <div class="flex items-center gap-2 mb-2">${numBadge}<span class="text-[10px] uppercase tracking-widest text-${phase.color}-400 font-semibold">${phase.label}</span></div>
-                    <div class="text-[12px] text-zinc-200 leading-relaxed">${body}</div>
-                </div>`;
-            }
             return html;
         }
 
@@ -1372,20 +1307,6 @@ Write in English even if the call was in Spanish.`;
                 document.getElementById('gp-intel').innerHTML = '<span class="text-zinc-600 text-[11px]">No new intel found beyond CRM data.</span>';
             }
 
-            // AI-generated phases → left column "Your Script" card
-            const phaseKeys = ['OPENING', 'RE-DISCOVERY', 'HANDLE AMBIGUITY', 'BRIDGE TO VALUE', 'LOCK NEXT STEP'];
-            const hasPhases = phaseKeys.some(k => sections[k]);
-            const phasesWrap = document.getElementById('gp-phases-wrap');
-            if (hasPhases) {
-                phasesWrap.classList.remove('hidden');
-                document.getElementById('gp-phases').innerHTML = renderCallPlaybook(sections);
-            } else {
-                const tpText = sections['TALKING POINTS'] || sections['KEY TALKING POINTS'] || '';
-                if (tpText) {
-                    phasesWrap.classList.remove('hidden');
-                    document.getElementById('gp-phases').innerHTML = renderTalkingPoints(tpText);
-                }
-            }
         }
 
         async function generateGamePlan() {
@@ -1555,11 +1476,6 @@ Use the CRM data first. If details are sparse, infer carefully from notes and ti
 
 CRM ABBREVIATIONS: "CNA" = Call. No Answer (Edoardo called, the client did not pick up). Treat repeated CNAs as a signal the client is going dark or avoiding contact.
 
-GATEKEEPER CHECK: Before writing the Call Playbook phases below, check CRM notes for who picks up the phone. If a gatekeeper (spouse, receptionist, assistant) consistently answers instead of the decision maker, add a GATEKEEPER section before OPENING with 2 lines max — only goals: confirm the owner is around and get passed through. Do NOT pitch or ask discovery questions to the gatekeeper. Then label the remaining phases: "IF YOU GET THROUGH TO [owner name]:" before OPENING. If NO gatekeeper pattern, skip the GATEKEEPER section entirely.
-
-RELATIONSHIP ASSESSMENT (internal — do NOT output this as a section):
-Read the CRM activity log and determine if this is an existing/warm client or a true first contact. Use this to guide your tone across all phases. Never use cold openers on someone Edoardo has talked to before. 99% of calls are re-engagement with existing contacts.
-
 Write in plain text only (no markdown, no asterisks, no bold).
 Keep it concise, high-signal, and natural.
 
@@ -1579,31 +1495,6 @@ OBJECTIVE:
 INTEL:
 - Use your web search tool to look up the client's business and name. Search for: recent equipment purchases, state DOT/FMCSA registrations (reveal fleet owned), Google Business reviews, phone numbers if CRM has none.
 - ONLY include intel that adds something NEW that the CONTEXT does not already cover, or that CONTRADICTS something in the CRM/CONTEXT. If your search just confirms what the CONTEXT already says, skip this section entirely. Do not repeat context.
-
-CALL PLAYBOOK — 5 phases, each adapted to the OBJECTIVE verb. Write the actual words Edoardo should say. Be specific to THIS client — their name, situation, CRM history.
-
-Adapt phases to the deal stage:
-- RECOVER/REACTIVATE/NURTURE/DISCOVER: full re-engagement (acknowledge past, give an out, rediscover from scratch, qualify, bridge if interest)
-- ADVANCE: skip the out, reference last convo, confirm interest, isolate the one blocker, push for next step
-- CLOSE: warm and direct, quick confirmation, final objection handling, go for PO/signature/delivery
-- UNCOVER: casual opener, dig into what CRM hints at but they haven't said, use Voss labeling and silence
-
-OPENING:
-2-3 sentences. Acknowledge the past + give an out (for re-engagement), or reference last convo (for advance/close).
-
-RE-DISCOVERY:
-3-4 questions. No pitching — diagnose. Ask about current state, priority shifts, what changed. Include at least one implication question ("Does that mean...", "What happens to...", "How do you get the jobs done if..."). Find the gap between where they are and where they want to be.
-
-HANDLE AMBIGUITY:
-Use if vague. 1-10 scale to qualify. Voss labeling to isolate hesitation. For close: final objection handling.
-
-BRIDGE TO VALUE:
-Only if interest confirmed. Connect their pain to a specific outcome using "which means for you..." framing. Sell the partnership, not the iron.
-
-LOCK NEXT STEP:
-Specific date commitment. Or professionally disqualify and take it away.
-
-(See language rule at top for Spanish-speaking clients. Section headers stay in English.)
 
 TEXT MESSAGE:
 - 1-2 sentences Edoardo can text if they don't pick up or to kick off the convo. The goal is to make them want to respond — not to sell anything. Lead with genuine curiosity about their world, their situation, or something specific that happened last time. Ask a question that only they can answer, or say something that shows you were actually paying attention, or share a helpful insight as a friend. Never pitch, never push, never hint at a sale. Sound like a person who's just wondering, not a rep who's trying to move a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
@@ -1631,9 +1522,9 @@ Keep the whole output practical and immediately usable.`;
             fullResponse = fullResponse.replace(/^::(?:CALL|TEXT)::\s*/im, '');
             fullResponse = fullResponse.replace(/\[\[\d+\]\]/g,'').replace(/\[(\d+)\]/g,'').replace(/\(https?:\/\/\S+?\)/g,'').replace(/\([\s,]*\)/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/\n{3,}/g,'\n\n').trim();
             let gamePlan = fullResponse;
-            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|OPENING|GATEKEEPER|RE-DISCOVERY|HANDLE AMBIGUITY|BRIDGE TO VALUE|LOCK NEXT STEP|IF YOU GET THROUGH[^:]*|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE)\s*:/gi;
+            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TEXT MESSAGE)\s*:/gi;
             gamePlan = gamePlan.replace(sectionHeaders, '\n\n$1:');
-            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|OPENER|OPENING APPROACH|OPENING|GATEKEEPER|RE-DISCOVERY|HANDLE AMBIGUITY|BRIDGE TO VALUE|LOCK NEXT STEP|IF YOU GET THROUGH[^:]*|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS TO EXPECT|OBJECTIONS|POTENTIAL OBJECTIONS|FORWARD-MOVING QUESTIONS|NEXT STEPS|CLOSE|TEXT MESSAGE):\s*/gi, '$1:\n');
+            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TEXT MESSAGE):\s*/gi, '$1:\n');
             gamePlan = gamePlan.replace(/\s+-\s+/g, '\n- ');
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();
             let textMessage = '';
