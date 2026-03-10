@@ -309,7 +309,7 @@
 
                                 <!-- RIGHT: Editable Cheat Sheet -->
                                 <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
-                                    <div id="editable-cheat-sheet" contenteditable="true" oninput="saveCheatSheet()" spellcheck="false" class="space-y-0 text-[11px] leading-snug focus:outline-none min-h-full pb-10">
+                                    <div id="editable-cheat-sheet" contenteditable="true" oninput="saveCheatSheet()" spellcheck="false" class="space-y-1 text-[13px] text-zinc-200 leading-relaxed focus:outline-none min-h-full pb-10 caret-white">
 
                                         <div class="pb-2">
                                             <div class="text-[9px] uppercase tracking-widest text-purple-400 font-semibold mb-1" contenteditable="false">📱 Pre-Call / Mindset</div>
@@ -1783,13 +1783,26 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
 
         // ═══ INIT ═══
         window.onload = async () => {
+            const cheatSheetEl = document.getElementById('editable-cheat-sheet');
+            if (cheatSheetEl) {
+                cheatSheetEl.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                });
+            }
+
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
             
             // Fast local load
-            const savedSheet = localStorage.getItem('custom_cheat_sheet');
+            let savedSheet = localStorage.getItem('custom_cheat_sheet');
             if (savedSheet) {
+                // Auto-migrate old small text sizes to larger ones
+                savedSheet = savedSheet.replace(/text-\[9px\]/g, 'text-[11px]');
+                savedSheet = savedSheet.replace(/text-\[10px\]/g, 'text-[12px]');
+                savedSheet = savedSheet.replace(/text-\[11px\]/g, 'text-[13px]');
                 document.getElementById('editable-cheat-sheet').innerHTML = savedSheet;
             }
 
@@ -1805,10 +1818,15 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
                     return null;
                 })
                 .then(text => {
-                    if (text && text !== savedSheet) {
-                        document.getElementById('editable-cheat-sheet').innerHTML = text;
-                        localStorage.setItem('custom_cheat_sheet', text);
-                        console.log('Cheat sheet synced from global store.');
+                    if (text) {
+                        text = text.replace(/text-\[9px\]/g, 'text-[11px]');
+                        text = text.replace(/text-\[10px\]/g, 'text-[12px]');
+                        text = text.replace(/text-\[11px\]/g, 'text-[13px]');
+                        if (text !== savedSheet) {
+                            document.getElementById('editable-cheat-sheet').innerHTML = text;
+                            localStorage.setItem('custom_cheat_sheet', text);
+                            console.log('Cheat sheet synced from global store.');
+                        }
                     }
                 })
                 .catch(e => console.error('Failed to load global cheat sheet:', e));
