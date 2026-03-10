@@ -1554,9 +1554,27 @@ Keep the whole output practical and immediately usable.`;
             return { gamePlan, textMessage, recommended };
         }
 
-        function saveCheatSheet() {
+        let syncTimeout = null;
+        async function saveCheatSheet() {
             const content = document.getElementById('editable-cheat-sheet').innerHTML;
             localStorage.setItem('custom_cheat_sheet', content);
+            
+            // Sync to global proxy in background
+            if (ACCESS_PIN && navigator.onLine) {
+                clearTimeout(syncTimeout);
+                syncTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(XAI_PROXY + '/kv/cheat_sheet', {
+                            method: 'POST',
+                            headers: { 'X-Pin': ACCESS_PIN },
+                            body: content
+                        });
+                        if (res.ok) console.log('Global cheat sheet synced.');
+                    } catch (e) {
+                        console.error('Failed to global sync cheat sheet:', e);
+                    }
+                }, 1000); // Debounce saves by 1s
+            }
         }
 
         // ═══ SUMMARY ═══
@@ -1769,7 +1787,7 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
             
-            // Initialize custom cheat sheet if one exists
+            // Fast local load
             const savedSheet = localStorage.getItem('custom_cheat_sheet');
             if (savedSheet) {
                 document.getElementById('editable-cheat-sheet').innerHTML = savedSheet;
@@ -1777,6 +1795,24 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
 
             if (ACCESS_PIN) {
                 document.getElementById('pin-lock').classList.add('hidden');
+                
+                // Background sync from global store
+                fetch(XAI_PROXY + '/kv/cheat_sheet', {
+                    headers: { 'X-Pin': ACCESS_PIN }
+                })
+                .then(res => {
+                    if (res.ok && res.status !== 204) return res.text();
+                    return null;
+                })
+                .then(text => {
+                    if (text && text !== savedSheet) {
+                        document.getElementById('editable-cheat-sheet').innerHTML = text;
+                        localStorage.setItem('custom_cheat_sheet', text);
+                        console.log('Cheat sheet synced from global store.');
+                    }
+                })
+                .catch(e => console.error('Failed to load global cheat sheet:', e));
+                
             } else if (!localStorage.getItem('access_pin')) {
                 document.getElementById('pin-subtitle').textContent = 'Choose a PIN (first time setup)';
             }
