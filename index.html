@@ -1470,7 +1470,7 @@ Write in English even if the call was in Spanish.`;
         function buildGamePlanPrompt(clientNotes) {
             const activeProps = getActiveValueProps();
             const valuePropBlock = activeProps.length > 0
-                ? `\nCURRENT VALUE PROPS (active promotions, events, and offers Edoardo can use right now):\n${activeProps.map(p => `- ${p}`).join('\n')}\n\nThe goal is NOT to pitch these directly. The goal is to use them to add genuine value — so Edoardo earns more trust, more goodwill, and becomes the obvious go-to when this client is ready to buy. Weave the most relevant ones naturally into the OPENING, RE-DISCOVERY, BRIDGE TO VALUE, or TEXT MESSAGE where they fit. Only use what's genuinely relevant to this specific client — don't force it.\n`
+                ? `\nCURRENT VALUE PROPS (active promotions, events, and offers Edoardo can use right now):\n${activeProps.map(p => `- ${p}`).join('\n')}\n\nThe goal is NOT to pitch these directly. The goal is to use them to add genuine value — so Edoardo earns more trust, more goodwill, and becomes the obvious go-to when this client is ready to buy. Weave the most relevant ones naturally into the TEXT MESSAGE where they fit. Only use what's genuinely relevant to this specific client — don't force it.\n`
                 : '';
             return `You are a sales strategist for Vermeer Southeast (large machinery, long sales cycles).
 
@@ -1480,7 +1480,7 @@ FIRST LINE OF YOUR RESPONSE: Output exactly one signal and nothing else on that 
 Be honest. Then start the plan on the next line.
 
 CRITICAL LANGUAGE RULE (apply before writing anything):
-Look at the client's name and any notes. If the name is Spanish (e.g. Isidro, Mauricio, Juan, Jose, Carlos, Miguel, Luis, etc.) OR if any notes are in Spanish, then write the content of these sections in Spanish: OPENING, RE-DISCOVERY, HANDLE AMBIGUITY, BRIDGE TO VALUE, LOCK NEXT STEP, and TEXT MESSAGE. Section headers stay in English. Everything inside those sections must be in Spanish for a Spanish-speaking client.
+Look at the client's name and any notes. If the name is Spanish (e.g. Isidro, Mauricio, Juan, Jose, Carlos, Miguel, Luis, etc.) OR if any notes are in Spanish, then write the TEXT MESSAGE section in Spanish. Section headers stay in English.
 
 About the Vermeer Southeast Inside Sales Rep (Edoardo):
 - Works from the office in GA. He does NOT do field visits. If a client needs to see equipment, they come to him. Default next steps are phone follow-ups, sending materials/videos, or inviting clients to the office.
