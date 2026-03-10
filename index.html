@@ -263,7 +263,11 @@
                             <!-- Two-column body -->
                             <div class="flex flex-1 min-h-0">
                                 <!-- LEFT: Account Snapshot, Intel, Quick Text -->
-                                <div class="w-[32%] border-r border-zinc-800/60 p-4 overflow-auto transcript-scroll space-y-3 flex-shrink-0">
+                                <div class="w-[32%] border-r border-zinc-800/60 flex-shrink-0 flex flex-col min-h-0">
+                                    <div class="px-4 pt-3 pb-1 flex-shrink-0">
+                                        <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📋 Account Intel</div>
+                                    </div>
+                                    <div class="flex-1 px-4 pb-4 overflow-auto transcript-scroll space-y-3">
                                     <!-- Account Snapshot Card -->
                                     <div id="gp-snapshot-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3 space-y-2.5">
                                         <div id="gp-snap-company" class="flex items-center gap-2">
@@ -306,10 +310,15 @@
                                         </div>
                                         <div id="text-msg-content" class="text-zinc-300 text-[12px] leading-relaxed whitespace-pre-wrap"></div>
                                     </div>
+                                    </div>
                                 </div>
 
                                 <!-- RIGHT: Editable Cheat Sheet -->
-                                <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
+                                <div class="flex-1 flex flex-col min-h-0">
+                                    <div class="px-4 pt-3 pb-1 flex-shrink-0 border-b border-zinc-800/40">
+                                        <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📒 Cheat Sheet</div>
+                                    </div>
+                                    <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
                                     <div id="editable-cheat-sheet" contenteditable="true" oninput="saveCheatSheet()" spellcheck="false" class="space-y-1 text-[13px] text-zinc-200 leading-relaxed focus:outline-none min-h-full pb-10 caret-white">
 
                                         <div class="pb-2">
@@ -431,6 +440,7 @@
                                             <div class="text-center text-[10px] text-zinc-500 italic">📝 "I don't sell iron. I sell Service, CP3 Peace of Mind, and my Cell Phone Number."</div>
                                         </div>
 
+                                    </div>
                                     </div>
                                 </div>
                             </div>
