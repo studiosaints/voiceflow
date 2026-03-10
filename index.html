@@ -1782,6 +1782,20 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             }
         });
 
+        function stripInlineStyles(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            tmp.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
+            tmp.querySelectorAll('[color]').forEach(el => el.removeAttribute('color'));
+            tmp.querySelectorAll('[bgcolor]').forEach(el => el.removeAttribute('bgcolor'));
+            tmp.querySelectorAll('font').forEach(el => {
+                const span = document.createElement('span');
+                span.innerHTML = el.innerHTML;
+                el.replaceWith(span);
+            });
+            return tmp.innerHTML;
+        }
+
         // ═══ INIT ═══
         window.onload = async () => {
             const cheatSheetEl = document.getElementById('editable-cheat-sheet');
@@ -1797,14 +1811,18 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
             
-            // Fast local load
+            // Fast local load — strip any broken inline styles from old saves
             let savedSheet = localStorage.getItem('custom_cheat_sheet');
             if (savedSheet) {
-                // Auto-migrate old small text sizes to larger ones
-                savedSheet = savedSheet.replace(/text-\[9px\]/g, 'text-[11px]');
-                savedSheet = savedSheet.replace(/text-\[10px\]/g, 'text-[12px]');
-                savedSheet = savedSheet.replace(/text-\[11px\]/g, 'text-[13px]');
-                document.getElementById('editable-cheat-sheet').innerHTML = savedSheet;
+                const cleaned = stripInlineStyles(savedSheet);
+                // If stripping made it look totally empty/broken, ditch the saved version
+                if (cleaned.replace(/<[^>]*>/g, '').trim().length < 20) {
+                    localStorage.removeItem('custom_cheat_sheet');
+                    savedSheet = null;
+                } else {
+                    savedSheet = cleaned;
+                    document.getElementById('editable-cheat-sheet').innerHTML = savedSheet;
+                }
             }
 
             if (ACCESS_PIN) {
@@ -1820,9 +1838,7 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
                 })
                 .then(text => {
                     if (text) {
-                        text = text.replace(/text-\[9px\]/g, 'text-[11px]');
-                        text = text.replace(/text-\[10px\]/g, 'text-[12px]');
-                        text = text.replace(/text-\[11px\]/g, 'text-[13px]');
+                        text = stripInlineStyles(text);
                         if (text !== savedSheet) {
                             document.getElementById('editable-cheat-sheet').innerHTML = text;
                             localStorage.setItem('custom_cheat_sheet', text);
