@@ -308,8 +308,16 @@
                                 </div>
 
                                 <!-- RIGHT: Static Cheat Sheet -->
-                                <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll">
-                                    <div class="space-y-0 text-[11px] leading-snug">
+                                <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
+                                    
+                                    <!-- EN/ES Toggle -->
+                                    <div class="absolute top-2 right-4 flex bg-zinc-800/80 rounded-full p-0.5 border border-zinc-700/50 z-10">
+                                        <button onclick="toggleCheatSheetLang('en')" id="cs-lang-en" class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-zinc-600 text-white shadow-sm transition-all">EN</button>
+                                        <button onclick="toggleCheatSheetLang('es')" id="cs-lang-es" class="px-2 py-0.5 text-[9px] font-bold rounded-full text-zinc-400 hover:text-white transition-all">ES</button>
+                                    </div>
+
+                                    <!-- ENGLISH CHEAT SHEET -->
+                                    <div id="cheat-sheet-en" class="space-y-0 text-[11px] leading-snug">
 
                                         <div class="pb-2">
                                             <div class="text-[9px] uppercase tracking-widest text-purple-400 font-semibold mb-1">📱 Pre-Call / Mindset</div>
@@ -431,6 +439,131 @@
                                         </div>
 
                                     </div>
+
+                                    <!-- SPANISH CHEAT SHEET -->
+                                    <div id="cheat-sheet-es" class="hidden space-y-0 text-[11px] leading-snug">
+
+                                        <div class="pb-2 mt-4 sm:mt-0">
+                                            <div class="text-[9px] uppercase tracking-widest text-purple-400 font-semibold mb-1">📱 Pre-Llamada / Mentalidad</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>📲 <span class="text-white font-medium">Hack de Caller ID:</span> Manda texto "Edoardo Santi at Vermeer SE" justo antes de llamar.</div>
+                                                <div>🧠 <span class="text-white font-medium">Mentalidad:</span> Estoy aquí para AGREGAR VALOR ("¿Cómo puedo contribuir?")</div>
+                                                <div>🩺 <span class="text-white font-medium">Soy el Doctor:</span> Diagnostica primero, receta después.</div>
+                                                <div>🐑 <span class="text-white font-medium">Cordero de Sacrificio:</span> Diles lo que no necesitan. Construye confianza masiva.</div>
+                                                <div>🗣️ <span class="text-white font-medium">Vender sin Vender:</span> Escucha, charla, sé normal. Menos presión = más atracción.</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-blue-400 font-semibold mb-1">🚪 1. La Apertura</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>🤝 <span class="text-white font-medium">Reconoce el Pasado:</span> "..hablamos en [XXYY] sobre [problema]"</div>
+                                                <div>🚪 <span class="text-white font-medium">Dale una "Salida":</span> "Para ser sincero, no sé si esto todavía es una prioridad. Si no lo es, solo dímelo. No quiero hacerte perder el tiempo."</div>
+                                                <div>🕵️ <span class="text-white font-medium">Reconocimiento Temprano:</span> "Por curiosidad, ¿a quién más estás considerando en este momento?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-cyan-400 font-semibold mb-1">📏 2. La Brecha (Re-Descubrimiento)</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>🩸 <span class="text-white font-medium">Estado Actual:</span> "¿Cuántos días al mes está esa vieja máquina en el taller?"</div>
+                                                <div>🌟 <span class="text-white font-medium">Estado Futuro:</span> "¿Cuántos trabajos más estás tratando de asumir este año?"</div>
+                                                <div>🌉 <span class="text-white font-medium">Destaca la Brecha:</span> "quieres asumir más trabajos por semana o tener la capacidad de hacer más de uno al día, pero estás usando esa trituradora pequeña y vieja, ¿cuántos trabajos más podrías conseguir si obtuvieras una bc1500?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-amber-400 font-semibold mb-1">⚠️ 3. Implicación (Haz que duela)</div>
+                                            <div class="text-[9px] text-zinc-500 mb-1">"Si lloran, compran." Expón el verdadero costo de no hacer nada.</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>🤔 <span class="text-white font-medium">"¿Eso significa que...?"</span> ...tu equipo está de brazos cruzados mientras corre el reloj?</div>
+                                                <div>🛑 <span class="text-white font-medium">"¿Qué pasa con...?"</span> ...tu fecha límite si esa máquina se descompone a mitad del trabajo?</div>
+                                                <div>🤷 <span class="text-white font-medium">"¿Cómo sacas los trabajos adelante...?"</span> ...si no actualizas tu equipo y no encuentras operadores?</div>
+                                                <div>📉 <span class="text-white font-medium">Aversión a la Pérdida:</span> ¿Qué vas a PERDER (trabajos, dinero, reputación) si no haces esto?</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-emerald-400 font-semibold mb-1">💡 4. Puente al Valor</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>⚙️➡️💵 <span class="text-white font-medium">De Especificaciones a Cheques:</span> NUNCA menciones una característica sin "...lo que significa para ti [Dinero/Tiempo/Seguridad]."</div>
+                                                <div>🤝 <span class="text-white font-medium">Fierro vs. Soporte:</span> "Puedes comprar fierro más barato. Pero cuando se rompe un martes a las 2 PM, ¿quién contesta el teléfono? Vermeer trata tu tiempo de inactividad como un incendio de nivel 5."</div>
+                                                <div>🏆 <span class="text-white font-medium">Tu éxito es mi éxito:</span> "Tus problemas son mis problemas. Estoy en esto para tu éxito a largo plazo."</div>
+                                                <div>🛡️ <span class="text-white font-medium">Inocula a la Competencia:</span> Diles lo que dirán los otros antes de que lo escuchen. "Te dirán que golpeas demasiado la barra de parada. Pero si salva la vida de un tipo, ¿no vale la pena?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-red-400 font-semibold mb-1">🛑 5. Objeciones y Ambigüedad</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>🏷️ <span class="text-white font-medium">Aísla (Voss):</span> "Por lo general son las tasas de interés, esperar una propuesta, o rezar para que el equipo viejo sobreviva. ¿Cuál es?"</div>
+                                                <div>💰 <span class="text-white font-medium">"¡Muy caro!":</span> "¿Qué te hace decir eso?" → <span class="text-amber-400 font-medium">SILENCIO</span></div>
+                                                <div>🙅 <span class="text-white font-medium">Sin Bajadas de Precio a Ciegas:</span> "Te soy sincero — Yo no pagaría $50k-$100k sin verlo. Ven, te prometo el mejor trato."</div>
+                                                <div>💸 <span class="text-white font-medium">Giro de "Mucho Dinero":</span> "¿Es una cantidad importante de dinero? ¿SÍ? Bien — eso significa que estás muy motivado y SÉ que tendrás éxito con ella."</div>
+                                                <div>👎➡️👍 <span class="text-white font-medium">Negativo + PERO Positivo:</span> "Sí, comprar tu primera máquina da miedo, PERO no podrías estar comprándola a una mejor compañía que te respalde."</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-purple-400 font-semibold mb-1">🔒 6. Cierre y Próximos Pasos</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>📅 <span class="text-white font-medium">Opciones Específicas:</span> NO "¿Cuándo estás libre?" → "¿Miércoles 3 PM o Jueves 11 AM?"</div>
+                                                <div>🤝 <span class="text-white font-medium">Promesa de "Último Vistazo":</span> "Si vas a ver a la competencia, solo prométeme que me darás una última oportunidad. ¿Justo?"</div>
+                                                <div>🏃 <span class="text-white font-medium">Quítaselo:</span> "Parece que no estás listo. Te sacaré de mi lista activa. Guarda mi número si las cosas cambian."</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-orange-400 font-semibold mb-1">🔄 Manual de Objeciones AAA</div>
+                                            <div class="text-[9px] text-zinc-500 mb-1">Reconoce → Asocia → Pregunta</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>💰 <span class="text-white font-medium">Precio</span> → "Lo entiendo." + "Los dueños inteligentes siempre revisan los números." → "¿Cómo tendrían que ser esos números?"</div>
+                                                <div>⏰ <span class="text-white font-medium">Tiempo</span> → "Tiene que ser el momento adecuado." + "El mejor momento para construir infraestructura es antes de necesitarla." → "¿Qué hitos tienen que ocurrir primero?"</div>
+                                                <div>🤔 <span class="text-white font-medium">Pensarlo</span> → "Te animo a hacerlo." + "Demuestra que te importa el resultado." → "¿Es el lado financiero, las características, o la confianza?"</div>
+                                                <div>👥 <span class="text-white font-medium">Hablar con socio</span> → "¡Genial!" + "El liderazgo unificado es clave." → "¿Cuál es su mayor escepticismo sobre esto?"</div>
+                                                <div>⚔️ <span class="text-white font-medium">Competencia</span> → "Deberías echar un vistazo." + "Los clientes que comparan se quedan más tiempo." → "¿Cuál es la métrica principal que estás comparando?"</div>
+                                                <div>🏃 <span class="text-white font-medium">Muy ocupado</span> → "Te escucho totalmente." + "Los dueños más ocupados son los que más se benefician." → "¿Demasiado ocupado porque las cosas van genial, o demasiado ocupado apagando incendios?"</div>
+                                                <div>😊 <span class="text-white font-medium">Feliz como está</span> → "Eso es genial." + "Un sistema que funciona es la mitad de la batalla." → "Del 1-10, ¿qué tan encantado estás con el ROI? ¿Qué lo hace un 10?"</div>
+                                                <div>😤 <span class="text-white font-medium">Mala experiencia</span> → "No te culpo." + "La mayoría de los clientes vinieron para arreglar el desastre de otro proveedor." → "¿Cuál fue el momento en que más te fallaron?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-sky-400 font-semibold mb-1">🇪🇸 Frases de Poder en Español</div>
+                                            <div class="space-y-0.5 text-zinc-300">
+                                                <div>🤝 <span class="text-white font-medium">Empatía:</span> "Ayúdeme a entender..."</div>
+                                                <div>💡 <span class="text-white font-medium">Valor:</span> "En base a lo que me ha comentado..."</div>
+                                                <div>🛑 <span class="text-white font-medium">Objeción:</span> "¿Qué te hace decir eso?"</div>
+                                                <div>🤝 <span class="text-white font-medium">Confianza:</span> "Te soy sincero..."</div>
+                                                <div>🚫 <span class="text-white font-medium">Sin Presión:</span> "No hay presión, pero sí vale mucho la pena verlo bien antes de tomar cualquier decisión."</div>
+                                                <div>🏆 <span class="text-white font-medium">Asociación:</span> "Puede contar con nosotros en cada paso."</div>
+                                                <div>👻 <span class="text-white font-medium">Mensaje Fantasma:</span> "¿haces Tree Service?"</div>
+                                                <div>🛡️ <span class="text-white font-medium">CP3:</span> "Confianza Plus 3 — cubre la hidráulica y la electrónica para que no te preocupes."</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 py-2">
+                                            <div class="text-[9px] uppercase tracking-widest text-yellow-400 font-semibold mb-1">🛡️ Arsenal de Valor de Vermeer</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>🔧 <span class="text-white font-medium">Red de Servicio:</span> "Las máquinas se rompen. Pero cuando le compras a Vermeer SE, compras 11 sucursales, camiones de servicio móviles, y técnicos certificados de fábrica. ¿Cuánto vale saber que tienes a toda una compañía apurándose para que vuelvas a operar?"</div>
+                                                <div class="text-zinc-500 text-[10px] pl-5">"Lo que agrega el mayor valor a nuestras máquinas es el servicio. Tenemos técnicos certificados y camiones de servicio listos para ir a donde estés."</div>
+                                                <div>🏖️ <span class="text-white font-medium">La Historia de Orlando:</span> "Estaba de vacaciones en Universal. Un cliente llamó a las 7 AM. Devolví la llamada a las 8. Incluso de vacaciones, mi jefe y yo armamos un plan de rescate. Tus problemas son mis problemas, tu éxito es mi éxito. Nadie te cuida como Vermeer."</div>
+                                                <div class="text-zinc-500 text-[10px] pl-5">"Tus problemas serán mis problemas y tu éxito, mi éxito. Nadie te atiende como Vermeer."</div>
+                                                <div>🛡️ <span class="text-white font-medium">CP3 "Dormir Tranquilo":</span> "Te cubre por 3 años — mantenimiento, hidráulica, electrónica. Tú manejas la máquina y haces dinero; nosotros nos preocupamos por el resto."</div>
+                                                <div class="text-zinc-500 text-[10px] pl-5">"Con el CP3, estás cubierto 3 años. Tú solo trabajas y haces dinero, nosotros nos preocupamos del resto."</div>
+                                                <div>⚠️ <span class="text-white font-medium">La Trampa de la Máquina Barata:</span> "La máquina más barata en el lote se convierte en la más cara del mundo cuando tu equipo de 3 hombres está de brazos cruzados durante una semana esperando una pieza."</div>
+                                                <div class="text-zinc-500 text-[10px] pl-5">"Lo barato sale carísimo cuando tu equipo está parado perdiendo días de trabajo."</div>
+                                                <div>🦸 <span class="text-white font-medium">Movimiento de Héroe (Préstamo):</span> "¿Tu máquina se retrasó? Ven a firmar un acuerdo de demo — te prestaremos una para que no pierdas ese trabajo. Tu éxito es lo primero."</div>
+                                                <div>💎 <span class="text-white font-medium">Valor de Reventa:</span> "Menos partes móviles = menores costos diarios. Vermeer mantiene algunos de los valores de reventa más fuertes en la industria de la tierra. Un activo a largo plazo, no una herramienta desechable."</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-2 pb-1">
+                                            <div class="text-center text-[10px] text-zinc-500 italic">📝 "No vendo fierro. Vendo Servicio, Tranquilidad CP3, y mi Número de Celular."</div>
+                                        </div>
+
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
@@ -1554,6 +1687,33 @@ Keep the whole output practical and immediately usable.`;
             return { gamePlan, textMessage, recommended };
         }
 
+        function toggleCheatSheetLang(lang) {
+            localStorage.setItem('cheatSheetLang', lang);
+            const isEs = lang === 'es';
+            
+            const enSheet = document.getElementById('cheat-sheet-en');
+            const esSheet = document.getElementById('cheat-sheet-es');
+            if (enSheet) enSheet.classList.toggle('hidden', isEs);
+            if (esSheet) esSheet.classList.toggle('hidden', !isEs);
+            
+            const btnEn = document.getElementById('cs-lang-en');
+            const btnEs = document.getElementById('cs-lang-es');
+            
+            if (btnEn && btnEs) {
+                if (isEs) {
+                    btnEs.classList.add('bg-zinc-600', 'text-white', 'shadow-sm');
+                    btnEs.classList.remove('text-zinc-400', 'hover:text-white');
+                    btnEn.classList.remove('bg-zinc-600', 'text-white', 'shadow-sm');
+                    btnEn.classList.add('text-zinc-400', 'hover:text-white');
+                } else {
+                    btnEn.classList.add('bg-zinc-600', 'text-white', 'shadow-sm');
+                    btnEn.classList.remove('text-zinc-400', 'hover:text-white');
+                    btnEs.classList.remove('bg-zinc-600', 'text-white', 'shadow-sm');
+                    btnEs.classList.add('text-zinc-400', 'hover:text-white');
+                }
+            }
+        }
+
         // ═══ SUMMARY ═══
         async function startSummary() {
             const transcriptEl = document.getElementById('transcript-text');
@@ -1763,6 +1923,11 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
+            
+            // Initialize cheat sheet language preference
+            const savedLang = localStorage.getItem('cheatSheetLang') || 'en';
+            toggleCheatSheetLang(savedLang);
+
             if (ACCESS_PIN) {
                 document.getElementById('pin-lock').classList.add('hidden');
             } else if (!localStorage.getItem('access_pin')) {
