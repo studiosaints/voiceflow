@@ -1516,6 +1516,8 @@ INTEL:
 - Use your web search tool to look up the client's business and name. Search for: recent equipment purchases, state DOT/FMCSA registrations (reveal fleet owned), Google Business reviews, phone numbers if CRM has none.
 - ONLY include intel that adds something NEW that the CONTEXT does not already cover, or that CONTRADICTS something in the CRM/CONTEXT. If your search just confirms what the CONTEXT already says, skip this section entirely. Do not repeat context.
 
+OUTPUT ONLY THESE 4 SECTIONS: ACCOUNT SNAPSHOT, OBJECTIVE, INTEL, TEXT MESSAGE. Do NOT add any other sections (no Opening, no Re-Discovery, no Talking Points, no Objections, no Bridge to Value, no Handle Ambiguity, no Lock Next Step, no Closing). Only the 4 listed above.
+
 TEXT MESSAGE:
 - 1-2 sentences Edoardo can text if they don't pick up or to kick off the convo. The goal is to make them want to respond — not to sell anything. Lead with genuine curiosity about their world, their situation, or something specific that happened last time. Ask a question that only they can answer, or say something that shows you were actually paying attention, or share a helpful insight as a friend. Never pitch, never push, never hint at a sale. Sound like a person who's just wondering, not a rep who's trying to move a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
 
@@ -1547,6 +1549,8 @@ Keep the whole output practical and immediately usable.`;
             gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TEXT MESSAGE):\s*/gi, '$1:\n');
             gamePlan = gamePlan.replace(/\s+-\s+/g, '\n- ');
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();
+            gamePlan = gamePlan.replace(/\n*(OPENING|RE-DISCOVERY|HANDLE AMBIGUITY|BRIDGE TO VALUE|LOCK NEXT STEP|GATEKEEPER|TALKING POINTS|KEY TALKING POINTS|OBJECTIONS|CLOSING|NEXT STEPS)\s*:[\s\S]*?(?=\n(?:ACCOUNT SNAPSHOT|OBJECTIVE|INTEL|TEXT MESSAGE)\s*:|$)/gi, '');
+            gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').trim();
             let textMessage = '';
             const tmMatch = gamePlan.match(/\n*TEXT MESSAGE:\n?([\s\S]*)$/i);
             if (tmMatch) { textMessage = tmMatch[1].replace(/^-\s*/m,'').trim(); gamePlan = gamePlan.replace(/\n*TEXT MESSAGE:[\s\S]*$/i,'').trim(); }
