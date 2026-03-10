@@ -298,6 +298,10 @@
                                         <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Intel</div>
                                         <div id="gp-intel" class="text-[12px] text-zinc-300 leading-relaxed"></div>
                                     </div>
+                                    <div id="gp-phases-wrap" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3">
+                                        <div class="text-[10px] uppercase tracking-widest text-purple-400 font-semibold mb-2">Your Script</div>
+                                        <div id="gp-phases" class="text-[12px] text-zinc-200 leading-relaxed"></div>
+                                    </div>
                                     <div id="text-msg-section" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3 border border-sky-500/10">
                                         <div class="flex items-center justify-between mb-2">
                                             <span class="text-[10px] uppercase tracking-widest text-sky-400 font-semibold">Quick Text</span>
@@ -307,15 +311,94 @@
                                     </div>
                                 </div>
 
-                                <!-- RIGHT: Talking Points, Objections -->
-                                <div class="flex-1 p-4 overflow-auto transcript-scroll space-y-3">
-                                    <div id="gp-questions-wrap" class="space-y-0">
-                                        <div id="gp-questions-label" class="text-[10px] uppercase tracking-widest text-purple-400 font-semibold mb-2 px-1">Call Playbook</div>
-                                        <div id="gp-questions" class="text-[12px] text-zinc-200 leading-relaxed"></div>
-                                    </div>
-                                    <div id="gp-objections-wrap" class="bg-zinc-900/60 rounded-xl px-4 py-3">
-                                        <div class="text-[10px] uppercase tracking-widest text-amber-400 font-semibold mb-2">AAA Playbook</div>
-                                        <div id="gp-objections" class="text-[12px] text-zinc-300 leading-relaxed"></div>
+                                <!-- RIGHT: Static Cheat Sheet -->
+                                <div class="flex-1 p-4 overflow-auto transcript-scroll">
+                                    <div class="space-y-4 text-[12px] leading-relaxed">
+
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-widest text-purple-400 font-semibold mb-1.5">📱 Pre-Call / Mindset</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>📲 <span class="text-white font-medium">Caller ID Hack:</span> Text "Edoardo Santi at Vermeer SE" right before calling.</div>
+                                                <div>🧠 <span class="text-white font-medium">Mindset:</span> I am here to ADD VALUE ("¿Cómo puedo contribuir?")</div>
+                                                <div>🩺 <span class="text-white font-medium">I am the Doctor:</span> Diagnose first, prescribe second. Right medicine, not biggest machine.</div>
+                                                <div>🐑 <span class="text-white font-medium">Sacrificial Lamb:</span> Tell them what they <em>don't</em> need. Builds massive trust.</div>
+                                                <div>🗣️ <span class="text-white font-medium">Sell without Selling:</span> Listen, chat, be normal. Less push = more pull.</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-blue-400 font-semibold mb-1.5">🚪 1. The Opening</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>🤝 <span class="text-white font-medium">Acknowledge the Past:</span> "Hey [Name], we spoke back in [Month] about [Machine]..."</div>
+                                                <div>🚪 <span class="text-white font-medium">Give the "Out":</span> "To be upfront, I don't know if this is still a priority. If it's not, just tell me. I don't want to waste your time."</div>
+                                                <div>🕵️ <span class="text-white font-medium">Early Recon:</span> "Just curious, who else are you considering right now?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-cyan-400 font-semibold mb-1.5">📏 2. The Gap (Re-Discovery)</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>🩸 <span class="text-white font-medium">Current State:</span> "How many days a month is that old machine in the shop?"</div>
+                                                <div>🌟 <span class="text-white font-medium">Future State:</span> "How many more jobs are you trying to take on this year?"</div>
+                                                <div>🌉 <span class="text-white font-medium">Highlight the Gap:</span> "You want to grow 20%, but you're losing 4 days/mo to downtime... how is that impacting your growth?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-amber-400 font-semibold mb-1.5">⚠️ 3. Implication (Make it Hurt)</div>
+                                            <div class="text-[10px] text-zinc-500 mb-1.5">"If they cry, they buy." Expose the true cost of doing nothing.</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>🤔 <span class="text-white font-medium">"Does that mean...?"</span> ...your crew is standing around on the clock?</div>
+                                                <div>🛑 <span class="text-white font-medium">"What happens to...?"</span> ...your deadline if that machine goes down mid-job?</div>
+                                                <div>🤷 <span class="text-white font-medium">"How do you get the jobs done...?"</span> ...if you don't upgrade and can't find operators?</div>
+                                                <div>📉 <span class="text-white font-medium">Loss Aversion:</span> What will you LOSE (jobs, money, reputation) if you don't do this?</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-emerald-400 font-semibold mb-1.5">💡 4. Bridge to Value</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>⚙️➡️💵 <span class="text-white font-medium">Specs to Checks:</span> NEVER pitch a feature without "...which means for you [Money/Time/Safety]."</div>
+                                                <div>🤝 <span class="text-white font-medium">Iron vs. Support:</span> "You can buy cheaper iron. But when it breaks on a Tuesday at 2 PM, who answers the phone? Vermeer treats your downtime like a 5-alarm fire."</div>
+                                                <div>🏆 <span class="text-white font-medium">Tu éxito es mi éxito:</span> "Your problems are my problems. I am in this for your long-term success."</div>
+                                                <div>🛡️ <span class="text-white font-medium">Inoculate the Competition:</span> Tell them what the other guys will say before they hear it. "They'll say you hit the stop bar too much. But if it saves a guy's life, isn't it worth it?"</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-red-400 font-semibold mb-1.5">🛑 5. Objections &amp; Ambiguity</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>🏷️ <span class="text-white font-medium">Isolate (Voss):</span> "Usually it's interest rates, waiting on a bid, or praying the old rig survives. Which one?"</div>
+                                                <div>💰 <span class="text-white font-medium">"Too expensive!":</span> "What makes you say that?" → <span class="text-amber-400 font-medium">SILENCE</span></div>
+                                                <div>🙅 <span class="text-white font-medium">No Blind Price Drop:</span> "Te soy sincero — I wouldn't pay $50k-$100k without seeing it. Come in, I promise the best deal."</div>
+                                                <div>💸 <span class="text-white font-medium">"Lots of Money" Flip:</span> "Is this meaningful money? YES? Good — that means you're highly motivated and I KNOW you'll be successful with it."</div>
+                                                <div>👎➡️👍 <span class="text-white font-medium">Negative + BUT Positive:</span> "Yes, buying your first machine is scary, BUT you couldn't be getting it from a better company that has your back."</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-purple-400 font-semibold mb-1.5">🔒 6. Closing &amp; Next Steps</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>📅 <span class="text-white font-medium">Specific Options:</span> NOT "When are you free?" → "Wednesday 3 PM or Thursday 11 AM?"</div>
+                                                <div>🤝 <span class="text-white font-medium">"Last Look" Promise:</span> "If you go look at the competition, just promise me you'll give me a final shot. Fair?"</div>
+                                                <div>🏃 <span class="text-white font-medium">Take it Away:</span> "Sounds like you aren't ready. I'm taking you off my active list. Keep my number if things change."</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-zinc-800/60 pt-3">
+                                            <div class="text-[10px] uppercase tracking-widest text-sky-400 font-semibold mb-1.5">🇪🇸 Spanish Power-Phrases</div>
+                                            <div class="space-y-1 text-zinc-300">
+                                                <div>🤝 <span class="text-white font-medium">Empathy:</span> "Ayúdeme a entender..."</div>
+                                                <div>💡 <span class="text-white font-medium">Value:</span> "En base a lo que me ha comentado..."</div>
+                                                <div>🛑 <span class="text-white font-medium">Objection:</span> "¿Qué te hace decir eso?"</div>
+                                                <div>🤝 <span class="text-white font-medium">Trust:</span> "Te soy sincero..."</div>
+                                                <div>🚫 <span class="text-white font-medium">No Pressure:</span> "No hay presión, pero sí vale mucho la pena verlo bien antes de tomar cualquier decisión."</div>
+                                                <div>🏆 <span class="text-white font-medium">Partnership:</span> "Puede contar con nosotros en cada paso."</div>
+                                                <div>👻 <span class="text-white font-medium">Ghost Text:</span> "¿haces Tree Service?"</div>
+                                                <div>🛡️ <span class="text-white font-medium">CP3:</span> "Confianza Plus 3 — cubre la hidráulica y la electrónica para que no te preocupes."</div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -1328,25 +1411,20 @@ Write in English even if the call was in Spanish.`;
                 document.getElementById('gp-intel').innerHTML = '<span class="text-zinc-600 text-[11px]">No new intel found beyond CRM data.</span>';
             }
 
-            // Call Playbook (5-phase) or fallback to flat Talking Points
+            // AI-generated phases → left column "Your Script" card
             const phaseKeys = ['OPENING', 'RE-DISCOVERY', 'HANDLE AMBIGUITY', 'BRIDGE TO VALUE', 'LOCK NEXT STEP'];
             const hasPhases = phaseKeys.some(k => sections[k]);
-            const questionsWrap = document.getElementById('gp-questions-wrap');
-            const questionsLabel = document.getElementById('gp-questions-label');
+            const phasesWrap = document.getElementById('gp-phases-wrap');
             if (hasPhases) {
-                questionsLabel.textContent = 'Call Playbook';
-                questionsWrap.className = 'space-y-0';
-                document.getElementById('gp-questions').innerHTML = renderCallPlaybook(sections);
+                phasesWrap.classList.remove('hidden');
+                document.getElementById('gp-phases').innerHTML = renderCallPlaybook(sections);
             } else {
-                questionsLabel.textContent = 'Talking Points';
-                questionsWrap.className = 'bg-zinc-900/60 rounded-xl px-4 py-3';
                 const tpText = sections['TALKING POINTS'] || sections['KEY TALKING POINTS'] || '';
-                document.getElementById('gp-questions').innerHTML = renderTalkingPoints(tpText);
+                if (tpText) {
+                    phasesWrap.classList.remove('hidden');
+                    document.getElementById('gp-phases').innerHTML = renderTalkingPoints(tpText);
+                }
             }
-
-            // Objections — always show static AAA playbook
-            document.getElementById('gp-objections').innerHTML = renderStaticObjections();
-            document.getElementById('gp-objections-wrap').classList.remove('hidden');
         }
 
         async function generateGamePlan() {
