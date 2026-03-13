@@ -15,7 +15,7 @@
         .transcript-scroll::-webkit-scrollbar-thumb { background: rgb(63 63 70); border-radius: 20px; }
         .mic-pulse { animation: micPulse 1.5s infinite ease-in-out; }
         @keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
-        #editable-cheat-sheet, #editable-cheat-sheet * { color: #d4d4d8 !important; background-color: transparent !important; font-size: 13px !important; }
+        #editable-cheat-sheet, #editable-cheat-sheet *, #editable-cheat-sheet-inbound, #editable-cheat-sheet-inbound * { color: #d4d4d8 !important; background-color: transparent !important; font-size: 13px !important; }
         @keyframes toastIn { from{opacity:0;transform:translate(-50%,12px)} to{opacity:1;transform:translate(-50%,0)} }
         @keyframes toastOut { from{opacity:1;transform:translate(-50%,0)} to{opacity:0;transform:translate(-50%,12px)} }
         .toast-enter { animation: toastIn 0.3s ease-out forwards; }
@@ -198,6 +198,7 @@
                     </button>
                 </div>
 
+                <div class="flex flex-1 min-h-0 overflow-hidden">
                 <div id="panels-container" class="flex-1 flex min-h-0 overflow-hidden">
                     <!-- Panel: CRM Input -->
                     <div id="panel-crm" class="hidden w-full p-5 flex flex-col min-h-0">
@@ -299,6 +300,10 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div id="gp-hard-questions-wrap" class="hidden bg-amber-500/5 rounded-xl px-4 py-3 border border-amber-500/20">
+                                        <div class="text-[10px] uppercase tracking-widest text-amber-400 font-semibold mb-2">🔮 Two Hard Questions</div>
+                                        <div id="gp-hard-questions" class="text-[12px] text-zinc-300 leading-relaxed space-y-2"></div>
+                                    </div>
                                     <div id="gp-intel-wrap" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3">
                                         <div class="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold mb-2">Intel</div>
                                         <div id="gp-intel" class="text-[12px] text-zinc-300 leading-relaxed"></div>
@@ -306,9 +311,13 @@
                                     <div id="text-msg-section" class="hidden bg-zinc-900/60 rounded-xl px-4 py-3 border border-sky-500/10">
                                         <div class="flex items-center justify-between mb-2">
                                             <span class="text-[10px] uppercase tracking-widest text-sky-400 font-semibold">Quick Text</span>
-                                            <button id="copy-text-msg-btn" onclick="copyTextMessage()" class="flex items-center gap-x-1 text-[10px] text-zinc-500 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                                            <div class="flex items-center gap-2">
+                                                <button id="suggest-task-btn" onclick="suggestNextTask()" class="flex items-center gap-x-1 text-[10px] text-zinc-500 hover:text-sky-400 transition-colors" title="Where should the next CRM task go?"><i class="fas fa-tasks"></i> Next task</button>
+                                                <button id="copy-text-msg-btn" onclick="copyTextMessage()" class="flex items-center gap-x-1 text-[10px] text-zinc-500 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                                            </div>
                                         </div>
                                         <div id="text-msg-content" class="text-zinc-300 text-[12px] leading-relaxed whitespace-pre-wrap"></div>
+                                        <div id="suggested-task-result" class="hidden mt-2 pt-2 border-t border-zinc-700 text-[11px] text-sky-400 font-medium"></div>
                                     </div>
                                     </div>
                                 </div>
@@ -319,7 +328,7 @@
                                         <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📒 Cheat Sheet</div>
                                     </div>
                                     <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
-                                    <div id="editable-cheat-sheet" contenteditable="true" oninput="saveCheatSheet()" spellcheck="false" class="space-y-1 text-[13px] text-zinc-200 leading-relaxed focus:outline-none min-h-full pb-10 caret-white">
+                                    <div id="editable-cheat-sheet" contenteditable="true" oninput="saveCheatSheet(this)" spellcheck="false" class="space-y-1 text-[13px] text-zinc-200 leading-relaxed focus:outline-none min-h-full pb-10 caret-white">
 
                                         <div class="pb-2">
                                             <div class="text-[9px] uppercase tracking-widest text-purple-400 font-semibold mb-1" contenteditable="false">📱 Pre-Call / Mindset</div>
@@ -464,20 +473,22 @@
                                 <button id="copy-transcript-btn" onclick="copyTranscript()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
                             </div>
                         </div>
-                        <div id="transcript-empty" class="flex-1 flex flex-col items-center justify-center text-center">
-                            <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
-                                <i class="fas fa-microphone text-2xl text-zinc-600"></i>
-                            </div>
-                            <p class="text-zinc-500 text-sm">Record a call to see the transcript</p>
-                            <p class="text-zinc-600 text-[11px] mt-1">Press <kbd class="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">R</kbd> to start</p>
-                            <button onclick="startManualEntry()" class="mt-4 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg">
-                                <i class="fas fa-keyboard"></i> Type / paste text
-                            </button>
-                        </div>
-                        <div id="transcript-content" class="hidden flex-1 flex flex-col min-h-0">
-                            <div id="transcript-text" contenteditable="false"
-                                 class="transcript-scroll bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-zinc-300 leading-relaxed text-[14px] flex-1 overflow-auto whitespace-pre-wrap focus:outline-none focus:border-blue-500/50"
-                                 data-placeholder="Type or paste your text here..."></div>
+                        <div class="flex-1 flex flex-col min-h-0 min-w-0">
+                                <div id="transcript-empty" class="flex-1 flex flex-col items-center justify-center text-center">
+                                    <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
+                                        <i class="fas fa-microphone text-2xl text-zinc-600"></i>
+                                    </div>
+                                    <p class="text-zinc-500 text-sm">Record a call to see the transcript</p>
+                                    <p class="text-zinc-600 text-[11px] mt-1">Press <kbd class="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">R</kbd> to start</p>
+                                    <button onclick="startManualEntry()" class="mt-4 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg">
+                                        <i class="fas fa-keyboard"></i> Type / paste text
+                                    </button>
+                                </div>
+                                <div id="transcript-content" class="hidden flex-1 flex flex-col min-h-0">
+                                    <div id="transcript-text" contenteditable="false"
+                                         class="transcript-scroll bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-zinc-300 leading-relaxed text-[14px] flex-1 overflow-auto whitespace-pre-wrap focus:outline-none focus:border-blue-500/50"
+                                         data-placeholder="Type or paste your text here..."></div>
+                                </div>
                         </div>
                     </div>
 
@@ -490,37 +501,39 @@
                                 <button id="copy-summary-btn" onclick="copySummary()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
                             </div>
                         </div>
-                        <div id="postcall-empty" class="flex-1 flex flex-col items-center justify-center text-center">
-                            <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
-                                <i class="fas fa-clipboard-check text-2xl text-zinc-600"></i>
-                            </div>
-                            <p class="text-zinc-500 text-sm">Summary appears after transcription</p>
-                        </div>
-                        <div id="postcall-content" class="hidden flex-1 flex flex-col min-h-0 overflow-auto transcript-scroll">
-                            <div id="summary-title-bar" class="hidden mb-3">
-                                <span id="summary-title-text" class="text-[15px] font-semibold text-white tracking-tight"></span>
-                            </div>
-                            <div id="summary-text" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-zinc-300 leading-relaxed text-[13px] whitespace-pre-wrap"></div>
-                            <div id="next-step-section" class="hidden mt-3">
-                                <div id="next-step-label" class="mb-1.5 flex items-center gap-2 text-emerald-400 text-[10px] font-semibold"><i class="fas fa-arrow-right"></i> NEXT STEP</div>
-                                <div id="next-step-box" class="bg-zinc-950 border border-emerald-500/30 rounded-xl px-4 py-3">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div id="next-step-title" class="text-white text-[13px] font-semibold leading-snug flex-1"></div>
-                                        <button id="copy-next-step-title-btn" onclick="copyNextStepTitle()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors flex-shrink-0"><i class="fas fa-copy"></i> COPY</button>
+                        <div class="flex-1 flex flex-col min-h-0 min-w-0">
+                                <div id="postcall-empty" class="flex-1 flex flex-col items-center justify-center text-center">
+                                    <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
+                                        <i class="fas fa-clipboard-check text-2xl text-zinc-600"></i>
                                     </div>
-                                    <div id="next-step-comment-wrap" class="hidden mt-2 pt-2 border-t border-zinc-800 flex items-start justify-between gap-2">
-                                        <div id="next-step-comment" class="text-zinc-400 text-[12px] leading-relaxed flex-1"></div>
-                                        <button id="copy-next-step-comment-btn" onclick="copyNextStepComment()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors flex-shrink-0"><i class="fas fa-copy"></i> COPY</button>
+                                    <p class="text-zinc-500 text-sm">Summary appears after transcription</p>
+                                </div>
+                                <div id="postcall-content" class="hidden flex-1 flex flex-col min-h-0 overflow-auto transcript-scroll">
+                                    <div id="summary-title-bar" class="hidden mb-3">
+                                        <span id="summary-title-text" class="text-[15px] font-semibold text-white tracking-tight"></span>
+                                    </div>
+                                    <div id="summary-text" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-zinc-300 leading-relaxed text-[13px] whitespace-pre-wrap"></div>
+                                    <div id="next-step-section" class="hidden mt-3">
+                                        <div id="next-step-label" class="mb-1.5 flex items-center gap-2 text-emerald-400 text-[10px] font-semibold"><i class="fas fa-arrow-right"></i> NEXT STEP</div>
+                                        <div id="next-step-box" class="bg-zinc-950 border border-emerald-500/30 rounded-xl px-4 py-3">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div id="next-step-title" class="text-white text-[13px] font-semibold leading-snug flex-1"></div>
+                                                <button id="copy-next-step-title-btn" onclick="copyNextStepTitle()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors flex-shrink-0"><i class="fas fa-copy"></i> COPY</button>
+                                            </div>
+                                            <div id="next-step-comment-wrap" class="hidden mt-2 pt-2 border-t border-zinc-800 flex items-start justify-between gap-2">
+                                                <div id="next-step-comment" class="text-zinc-400 text-[12px] leading-relaxed flex-1"></div>
+                                                <button id="copy-next-step-comment-btn" onclick="copyNextStepComment()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors flex-shrink-0"><i class="fas fa-copy"></i> COPY</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="followup-section" class="hidden mt-3">
+                                        <div class="mb-1.5 flex items-center gap-2 text-amber-400 text-[10px] font-semibold"><i class="fas fa-calendar"></i> FOLLOW UP</div>
+                                        <div class="bg-zinc-950 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
+                                            <span id="followup-date" class="text-white text-[13px] font-semibold"></span>
+                                            <button id="copy-followup-btn" onclick="copyFollowUp()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div id="followup-section" class="hidden mt-3">
-                                <div class="mb-1.5 flex items-center gap-2 text-amber-400 text-[10px] font-semibold"><i class="fas fa-calendar"></i> FOLLOW UP</div>
-                                <div class="bg-zinc-950 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
-                                    <span id="followup-date" class="text-white text-[13px] font-semibold"></span>
-                                    <button id="copy-followup-btn" onclick="copyFollowUp()" class="flex items-center gap-x-1 text-[10px] text-zinc-400 hover:text-white transition-colors"><i class="fas fa-copy"></i> COPY</button>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -534,12 +547,23 @@
                             <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
                                 <i class="fas fa-brain text-2xl text-zinc-600"></i>
                             </div>
-                            <p class="text-zinc-500 text-sm">Coaching loads with the summary</p>
+                            <p class="text-zinc-500 text-sm">Coaching loads when you open this panel</p>
                         </div>
                         <div id="coaching-content" class="hidden flex-1 flex flex-col min-h-0">
                             <div id="coaching-text" class="transcript-scroll bg-zinc-950 border border-amber-500/20 rounded-2xl p-4 text-zinc-300 leading-relaxed text-[13px] flex-1 overflow-auto whitespace-pre-wrap"></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Inbound Cheat Sheet (shared, visible when flowMode=inbound) -->
+                <div id="inbound-cheatsheet-wrap" class="hidden w-[38%] flex-shrink-0 flex flex-col min-h-0 border-l border-zinc-800/60 pl-4 py-5">
+                    <div class="px-0 pt-0 pb-1 flex-shrink-0 border-b border-zinc-800/40 mb-2">
+                        <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📒 Cheat Sheet</div>
+                    </div>
+                    <div class="flex-1 overflow-auto transcript-scroll relative">
+                        <div id="editable-cheat-sheet-inbound" contenteditable="true" oninput="saveCheatSheet(this)" spellcheck="false" class="space-y-1 text-[13px] text-zinc-200 leading-relaxed focus:outline-none min-h-full pb-10 caret-white"></div>
+                    </div>
+                </div>
                 </div>
 
                 <div class="border-t border-zinc-800 bg-zinc-900 px-6 py-2 flex items-center justify-between text-[10px] text-zinc-500 flex-shrink-0">
@@ -601,6 +625,8 @@ Write in English even if the call was in Spanish.`;
         let currentTranscript = null;
         let currentSummary = null;
         let currentCoaching = null;
+        let coachingLoaded = false;
+        let summaryTranscriptForCoaching = null;
         let currentGamePlan = null;
         let parsedPrepOutput = '';
         let isRecording = false;
@@ -691,6 +717,21 @@ Write in English even if the call was in Spanish.`;
             const activeKey = panels[panelIndex];
             if (activeKey) {
                 document.getElementById(PANEL_DEFS[activeKey].id).classList.remove('hidden');
+                if (activeKey === 'coach' && summaryTranscriptForCoaching && !coachingLoaded) {
+                    coachingLoaded = true;
+                    document.getElementById('coach-empty').classList.add('hidden');
+                    document.getElementById('coaching-content').classList.remove('hidden');
+                    document.getElementById('coaching-text').innerHTML = '<div class="flex items-center gap-x-2 text-zinc-600 text-xs"><span class="animate-spin inline-block w-3 h-3 border border-amber-500/50 border-t-transparent rounded-full"></span><span>Loading coaching...</span></div>';
+                    getGrokCoaching(summaryTranscriptForCoaching, getCallType()).catch(err => {
+                        console.error('Coaching error:', err);
+                        document.getElementById('coaching-text').textContent = 'Coaching unavailable: ' + err.message;
+                    });
+                }
+            }
+            const inboundWrap = document.getElementById('inbound-cheatsheet-wrap');
+            if (inboundWrap) {
+                if (flowMode === 'inbound') inboundWrap.classList.remove('hidden');
+                else inboundWrap.classList.add('hidden');
             }
             document.getElementById('nav-left').disabled = panelIndex <= 0;
             document.getElementById('nav-right').disabled = panelIndex >= panels.length - 1;
@@ -1108,7 +1149,7 @@ Write in English even if the call was in Spanish.`;
             final += '\n\n';
             if (upcomingTasks.length > 0) { final += 'TASKS:\n' + upcomingTasks.join('\n') + '\n\n'; }
             final += 'RECENT ACTIVITY & NOTES (Most recent found):\n';
-            final += '(Note: any activity dated Jan 30 may be much older — dates were reset during a system migration.)\n';
+            final += `IMPORTANT — Activity timeline order: Items at the TOP are most recent. The further DOWN you go, the longer ago it was. Do not assume many entries = recent activity; a long list can include calls that were years ago (system/dating quirks). Activity dated Jan 30 may be much older — dates were reset during a system migration. Anything before a switch from Scott or Eddie to Edoardo was often at least 2 years ago.\n`;
             final += activityLog.length > 0 ? activityLog.join('\n\n') : 'No notes/comments found in this dump.';
             return final;
         }
@@ -1245,7 +1286,7 @@ Write in English even if the call was in Spanish.`;
 
         function parseSections(text) {
             const sections = {};
-            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL)\s*:/gim;
+            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS)\s*:/gim;
             const keys = [];
             const positions = [];
             let m;
@@ -1328,6 +1369,18 @@ Write in English even if the call was in Spanish.`;
             document.querySelector('#gp-snap-opps span').innerHTML = formatOpps(oppsRaw);
             document.getElementById('gp-snap-task').textContent = snapFields['MY TASK'] || '—';
 
+            // Two Hard Questions
+            const hardQRaw = sections['TWO HARD QUESTIONS'] || '';
+            const hardQWrap = document.getElementById('gp-hard-questions-wrap');
+            const hardQEl = document.getElementById('gp-hard-questions');
+            if (hardQRaw && hardQRaw.trim().length > 10) {
+                const lines = hardQRaw.split('\n').map(l => l.replace(/^[\d.]+\s*/, '').trim()).filter(l => l.length > 5);
+                hardQEl.innerHTML = lines.slice(0, 2).map((q, i) => `<div class="flex items-start gap-2"><span class="text-amber-400 font-bold flex-shrink-0">${i+1}.</span><span>${escapeHtml(q)}</span></div>`).join('');
+                hardQWrap.classList.remove('hidden');
+            } else {
+                hardQWrap.classList.add('hidden');
+            }
+
             // Intel — always show
             const intelText = sections['INTEL'] || '';
             const intelWrap = document.getElementById('gp-intel-wrap');
@@ -1361,6 +1414,7 @@ Write in English even if the call was in Spanish.`;
                 if (result.textMessage) {
                     document.getElementById('text-msg-content').textContent = result.textMessage;
                     const tmSection = document.getElementById('text-msg-section');
+                    document.getElementById('suggested-task-result').classList.add('hidden');
                     tmSection.classList.remove('hidden');
                     tmSection.className = tmSection.className.replace(/border-\S+/g, '').replace(/shadow-\S+/g, '').trim();
                     if (result.recommended === 'text') {
@@ -1505,7 +1559,15 @@ ${valuePropBlock}
 YOUR JOB: produce a practical game plan that moves the account forward from its current stage.
 Use the CRM data first. If details are sparse, infer carefully from notes and timeline.
 
+SMART ACCOUNT INTEL — use everything the CRM gives you. Do what a sharp strategist would:
+- If Edoardo has never actually spoken to this contact, say it. "Never spoken — first real contact" or "All CNAs/VMs, no live conversation yet." That changes the approach.
+- If notes mention the contact is difficult, hard to work with, or similar: acknowledge it and suggest a different tack (more patient, different angle, lower pressure, etc.).
+- If the client offered something useful (e.g. "stop by for free mulch", "come see the yard", "text when you're in the area"): surface it prominently and use it. Remind Edoardo to take them up on it. Work it into MY TASK or the approach.
+- Pull value from every note, comment, and opportunity. Nothing gets ignored. Be stratigically 
+
 CRM ABBREVIATIONS: "CNA" = Call. No Answer (Edoardo called, the client did not pick up). Treat repeated CNAs as a signal the client is going dark or avoiding contact.
+
+ACTIVITY TIMELINE (when interpreting RECENT ACTIVITY): Top = most recent, further down = older. Many entries does NOT mean lots of recent calls — older activity can appear in the list. Activity before a rep switch from Scott or Eddie to Edoardo is often 2+ years old.
 
 Write in plain text only (no markdown, no asterisks, no bold).
 Keep it concise, high-signal, and natural.
@@ -1527,8 +1589,11 @@ INTEL:
 - Use your web search tool to look up the client's business and name. Search for: recent equipment purchases, state DOT/FMCSA registrations (reveal fleet owned), Google Business reviews, phone numbers if CRM has none.
 - ONLY include intel that adds something NEW that the CONTEXT does not already cover, or that CONTRADICTS something in the CRM/CONTEXT. If your search just confirms what the CONTEXT already says, skip this section entirely. Do not repeat context.
 
+TWO HARD QUESTIONS:
+- Output exactly 2 questions Edoardo should ask on this call to reach the goal. They must be customized to this specific account and situation. Ingenious, out-of-the-box, situation-specific. Not generic. The kind of question that uncovers pain, isolates objections, or moves the conversation forward. One per line, prefixed with "1." and "2."
+
 TEXT MESSAGE:
-- 1-2 sentences Edoardo can text if they don't pick up or to kick off the convo. The goal is to make them want to respond — not to sell anything. Lead with genuine curiosity about their world, their situation, or something specific that happened last time. Ask a question that only they can answer, or say something that shows you were actually paying attention, or share a helpful insight as a friend. Never pitch, never push, never hint at a sale. Sound like a person who's just wondering, not a rep who's trying to move a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
+- Write 1-2 sentences that directly serve the OBJECTIVE above. The text should feel like a natural extension of the goal sentence — e.g. if ADVANCE is "get him to commit to coming in", the text opens that door without pitching. If NURTURE is "stay top of mind", the text adds value and curiosity. Make them want to respond. Lead with genuine curiosity, something specific from last time, or a helpful insight. Ask a question only they can answer. Never pitch, never push. Sound like a person wondering, not a rep moving a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
 
 Keep the whole output practical and immediately usable.`;
         }
@@ -1553,9 +1618,9 @@ Keep the whole output practical and immediately usable.`;
             fullResponse = fullResponse.replace(/^::(?:CALL|TEXT)::\s*/im, '');
             fullResponse = fullResponse.replace(/\[\[\d+\]\]/g,'').replace(/\[(\d+)\]/g,'').replace(/\(https?:\/\/\S+?\)/g,'').replace(/\([\s,]*\)/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/\n{3,}/g,'\n\n').trim();
             let gamePlan = fullResponse;
-            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TEXT MESSAGE)\s*:/gi;
+            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|TEXT MESSAGE)\s*:/gi;
             gamePlan = gamePlan.replace(sectionHeaders, '\n\n$1:');
-            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TEXT MESSAGE):\s*/gi, '$1:\n');
+            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|TEXT MESSAGE):\s*/gi, '$1:\n');
             gamePlan = gamePlan.replace(/\s+-\s+/g, '\n- ');
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').trim();
@@ -1566,9 +1631,14 @@ Keep the whole output practical and immediately usable.`;
         }
 
         let syncTimeout = null;
-        async function saveCheatSheet() {
-            const content = document.getElementById('editable-cheat-sheet').innerHTML;
+        async function saveCheatSheet(sourceEl) {
+            const main = document.getElementById('editable-cheat-sheet');
+            const inbound = document.getElementById('editable-cheat-sheet-inbound');
+            const content = (sourceEl || main) ? (sourceEl || main).innerHTML : (main && main.innerHTML);
+            if (!content) return;
             localStorage.setItem('custom_cheat_sheet', content);
+            if (main && main !== sourceEl) main.innerHTML = content;
+            if (inbound && inbound !== sourceEl) inbound.innerHTML = content;
             
             // Sync to global proxy in background
             if (ACCESS_PIN && navigator.onLine) {
@@ -1610,16 +1680,16 @@ Keep the whole output practical and immediately usable.`;
             document.getElementById('next-step-section').classList.add('hidden');
             document.getElementById('followup-section').classList.add('hidden');
             document.getElementById('summary-text').innerHTML = '<div class="flex items-center gap-x-2 text-zinc-600 text-xs"><span class="animate-spin inline-block w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full"></span><span>Summarizing...</span></div>';
-            document.getElementById('coach-empty').classList.add('hidden');
-            document.getElementById('coaching-content').classList.remove('hidden');
-            document.getElementById('coaching-text').innerHTML = '<div class="flex items-center gap-x-2 text-zinc-600 text-xs"><span class="animate-spin inline-block w-3 h-3 border border-amber-500/50 border-t-transparent rounded-full"></span><span>Coaching loading...</span></div>';
+            document.getElementById('coach-empty').classList.remove('hidden');
+            document.getElementById('coaching-content').classList.add('hidden');
+            coachingLoaded = false;
+            summaryTranscriptForCoaching = text;
             navigateTo('postcall');
             try {
                 document.getElementById('progress-bar').style.width = '60%';
                 const rawSummary = await getGrokSummary(text);
                 renderSummary(rawSummary);
                 document.getElementById('status-text').textContent = 'Summary ready!';
-                getGrokCoaching(text, getCallType()).catch(err => { console.error('Coaching error:', err); document.getElementById('coaching-text').textContent = 'Coaching unavailable: ' + err.message; });
                 document.getElementById('progress-bar').style.width = '100%';
                 setTimeout(() => document.getElementById('status').classList.add('hidden'), 800);
             } catch (err) {
@@ -1738,6 +1808,50 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
         // ═══ COPY / DOWNLOAD ═══
         function copyGamePlan() { const t = currentGamePlan?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-gameplan-btn','COPIED!'); }
         function copyTextMessage() { const t = document.getElementById('text-msg-content')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-text-msg-btn','COPIED!'); }
+
+        async function suggestNextTask() {
+            const textMsg = document.getElementById('text-msg-content')?.textContent?.trim();
+            if (!textMsg) { showToast('No text message'); return; }
+            if (!ACCESS_PIN) { alert('Set your Access PIN in Settings!'); openSettings(); return; }
+            const resultEl = document.getElementById('suggested-task-result');
+            const btn = document.getElementById('suggest-task-btn');
+            resultEl.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin inline-block w-3 h-3 border border-sky-400 border-t-transparent rounded-full"></span>';
+            try {
+                const crm = parsedPrepOutput || 'No CRM data.';
+                const objective = (currentGamePlan || '').match(/OBJECTIVE:?\s*([\s\S]*?)(?=INTEL|TEXT MESSAGE|$)/i)?.[1]?.trim() || 'NURTURE — stay top of mind';
+                const prompt = `Edoardo is about to send this text/VM to a client: "${textMsg.slice(0,200)}${textMsg.length>200?'...':''}"
+
+Context: ${crm.slice(0,800)}${crm.length>800?'...':''}
+
+Game plan objective: ${objective.slice(0,300)}
+
+Output ONLY the next task for Salesforce — 3 to 8 words. Example: "Follow up on chipper interest" or "Send BC1500 specs" or "Check back in 2 weeks". Nothing else.`;
+                const res = await fetch(XAI_PROXY + '/xai/chat/completions', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json','X-Pin': ACCESS_PIN},
+                    body: JSON.stringify({ model:"grok-4-1-fast-non-reasoning", messages:[{role:"user",content:prompt}], temperature:0.2, max_tokens:60 })
+                });
+                if (!res.ok) throw new Error('API error: ' + res.status);
+                const data = await res.json();
+                const task = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g,'').slice(0,80);
+                if (task) {
+                    resultEl.textContent = '→ ' + task;
+                    resultEl.dataset.task = task;
+                    resultEl.classList.remove('hidden');
+                    resultEl.onclick = () => { navigator.clipboard.writeText(resultEl.dataset.task || task); flashCopyBtn('suggest-task-btn','COPIED!'); showToast('Task copied!'); };
+                    resultEl.classList.add('cursor-pointer');
+                    resultEl.title = 'Click to copy';
+                }
+            } catch (err) {
+                console.error('Suggest task error:', err);
+                showToast('Could not suggest task: ' + (err.message || 'Unknown error'));
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-tasks"></i> Next task';
+            }
+        }
         function copyTranscript() { const t = document.getElementById('transcript-text')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-transcript-btn','COPIED!'); showToast('Transcript copied!'); }
         function copySummary() { if(!currentSummary)return; navigator.clipboard.writeText(currentSummary); flashCopyBtn('copy-summary-btn','COPIED!'); showToast('Summary copied!'); }
         function copyNextStepTitle() { const t = document.getElementById('next-step-title')?.textContent?.trim(); if(!t)return; navigator.clipboard.writeText(t); flashCopyBtn('copy-next-step-title-btn','COPIED!'); }
@@ -1809,13 +1923,14 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
         // ═══ INIT ═══
         window.onload = async () => {
             const cheatSheetEl = document.getElementById('editable-cheat-sheet');
-            if (cheatSheetEl) {
-                cheatSheetEl.addEventListener('paste', function(e) {
-                    e.preventDefault();
-                    const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-                    document.execCommand('insertText', false, text);
-                });
-            }
+            const inboundCheatEl = document.getElementById('editable-cheat-sheet-inbound');
+            const pasteHandler = function(e) {
+                e.preventDefault();
+                const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            };
+            if (cheatSheetEl) cheatSheetEl.addEventListener('paste', pasteHandler);
+            if (inboundCheatEl) inboundCheatEl.addEventListener('paste', pasteHandler);
 
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
@@ -1832,8 +1947,13 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
                 } else {
                     savedSheet = cleaned;
                     document.getElementById('editable-cheat-sheet').innerHTML = savedSheet;
+                    const inv = document.getElementById('editable-cheat-sheet-inbound');
+                    if (inv) inv.innerHTML = savedSheet;
                 }
             }
+            const inv = document.getElementById('editable-cheat-sheet-inbound');
+            const main = document.getElementById('editable-cheat-sheet');
+            if (inv && main && (!inv.textContent || inv.textContent.trim().length < 20)) inv.innerHTML = main.innerHTML;
 
             if (ACCESS_PIN) {
                 document.getElementById('pin-lock').classList.add('hidden');
@@ -1851,6 +1971,8 @@ Plain text only. No markdown, no asterisks, no bullet symbols.`;
                         text = stripInlineStyles(text);
                         if (text !== savedSheet) {
                             document.getElementById('editable-cheat-sheet').innerHTML = text;
+                            const inv = document.getElementById('editable-cheat-sheet-inbound');
+                            if (inv) inv.innerHTML = text;
                             localStorage.setItem('custom_cheat_sheet', text);
                             console.log('Cheat sheet synced from global store.');
                         }
