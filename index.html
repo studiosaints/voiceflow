@@ -1563,7 +1563,7 @@ SMART ACCOUNT INTEL — use everything the CRM gives you. Do what a sharp strate
 - If Edoardo has never actually spoken to this contact, say it. "Never spoken — first real contact" or "All CNAs/VMs, no live conversation yet." That changes the approach.
 - If notes mention the contact is difficult, hard to work with, or similar: acknowledge it and suggest a different tack (more patient, different angle, lower pressure, etc.).
 - If the client offered something useful (e.g. "stop by for free mulch", "come see the yard", "text when you're in the area"): surface it prominently and use it. Remind Edoardo to take them up on it. Work it into MY TASK or the approach.
-- Pull value from every note, comment, and opportunity. Nothing gets ignored. Be stratigically 
+- Pull value from every note, comment, and opportunity. Nothing gets ignored. Be stratigic and smart about this.
 
 CRM ABBREVIATIONS: "CNA" = Call. No Answer (Edoardo called, the client did not pick up). Treat repeated CNAs as a signal the client is going dark or avoiding contact.
 
@@ -1590,7 +1590,7 @@ INTEL:
 - ONLY include intel that adds something NEW that the CONTEXT does not already cover, or that CONTRADICTS something in the CRM/CONTEXT. If your search just confirms what the CONTEXT already says, skip this section entirely. Do not repeat context.
 
 TWO HARD QUESTIONS:
-- Output exactly 2 questions Edoardo should ask on this call to reach the goal. They must be customized to this specific account and situation. Ingenious, out-of-the-box, situation-specific. Not generic. The kind of question that uncovers pain, isolates objections, or moves the conversation forward. One per line, prefixed with "1." and "2."
+- Output exactly 2 questions Edoardo should ask on this call to reach the goal. They must be customized to this specific account and situation. Ingenious, out-of-the-box, situation-specific. Not generic. The kind of question that uncovers pain, isolates objections, or moves the conversation forward. Prefixed with "1." and "2."
 
 TEXT MESSAGE:
 - Write 1-2 sentences that directly serve the OBJECTIVE above. The text should feel like a natural extension of the goal sentence — e.g. if ADVANCE is "get him to commit to coming in", the text opens that door without pitching. If NURTURE is "stay top of mind", the text adds value and curiosity. Make them want to respond. Lead with genuine curiosity, something specific from last time, or a helpful insight. Ask a question only they can answer. Never pitch, never push. Sound like a person wondering, not a rep moving a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
@@ -1709,7 +1709,7 @@ Keep the whole output practical and immediately usable.`;
             const today = new Date();
             const todayStr = `${today.getMonth()+1}/${today.getDate()}/${String(today.getFullYear()).slice(2)}`;
             const crmData = parsedPrepOutput || '';
-            const gamePlanCtx = currentGamePlan ? `\nGame plan going into this call:\n${currentGamePlan}\n` : '';
+            const gamePlanCtx = (flowMode === 'outbound' && currentGamePlan) ? `\nGame plan going into this call:\n${currentGamePlan}\n` : '';
             const titleInstruction = `\nStructure your response exactly like this — no deviations:
 Line 1 → TITLE: [2-5 word title for the interaction — e.g. "LVM to Gilberto", "Inquired about ML150", "Pushed Spring Purchase"]
 Blank line
@@ -1766,7 +1766,7 @@ Just the date, nothing else. e.g. "3/3/26" or "5/20/26"]`;
 
         // ═══ COACHING ═══
         async function getGrokCoaching(transcriptText, callType) {
-            const gamePlanContext = currentGamePlan
+            const gamePlanContext = (flowMode === 'outbound' && currentGamePlan)
                 ? `Game plan Edoardo had going into this interaction:\n${currentGamePlan}`
                 : 'No game plan was prepared for this interaction.';
             const interactionType = callType || (flowMode === 'outbound' ? 'Outbound call' : 'Inbound interaction');
