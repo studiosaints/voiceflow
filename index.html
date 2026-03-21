@@ -1767,43 +1767,24 @@ Keep the whole output practical and immediately usable.`;
 
         async function getGeminiGamePlan(clientNotes) {
             const prompt = buildGamePlanPrompt(clientNotes);
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7 }
-            };
-            const models = ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'];
-            let lastDetail = '';
-            for (let i = 0; i < models.length; i++) {
-                const model = models[i];
-                const res = await fetch(XAI_PROXY + '/gemini/models/' + model + ':generateContent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Pin': ACCESS_PIN },
-                    body: JSON.stringify(payload)
-                });
-                const rawText = await res.text();
-                let data;
-                try {
-                    data = rawText ? JSON.parse(rawText) : {};
-                } catch {
-                    throw new Error('Gemini error (' + res.status + '): proxy returned non-JSON — add a /gemini/ route + GEMINI_KEY on voiceflow-proxy (see RECIPES.md).');
-                }
-                if (!res.ok) {
-                    const msg = parseGeminiApiError(data, res.status, rawText);
-                    lastDetail = msg || res.statusText;
-                    const retry = res.status === 404 || /not found|invalid.*model|does not exist|not supported|UNKNOWN_MODEL/i.test(msg || '');
-                    if (retry && i < models.length - 1) continue;
-                    throw new Error('Gemini error (' + res.status + '): ' + (msg || res.statusText));
-                }
-                const extracted = extractGeminiResponseText(data);
-                if (extracted && typeof extracted === 'object' && extracted.blocked) {
-                    throw new Error('Gemini blocked: ' + (extracted.reason || 'unknown'));
-                }
-                const fullResponse = typeof extracted === 'string' ? extracted : '';
-                if (fullResponse) return parseGamePlanFromModelOutput(fullResponse);
-                lastDetail = 'empty response';
-                if (i < models.length - 1) continue;
-            }
-            throw new Error('Gemini failed: ' + (lastDetail || 'no text — check API key and model access'));
+            const res = await fetch(XAI_PROXY + '/gemini/models/gemini-3.1-pro-preview:generateContent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Pin': ACCESS_PIN },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.7 }
+                })
+            });
+            const rawText = await res.text();
+            let data;
+            try { data = rawText ? JSON.parse(rawText) : {}; }
+            catch { throw new Error('Gemini error (' + res.status + '): proxy returned non-JSON — is /gemini/ configured on voiceflow-proxy?'); }
+            if (!res.ok) throw new Error('Gemini error (' + res.status + '): ' + parseGeminiApiError(data, res.status, rawText));
+            const extracted = extractGeminiResponseText(data);
+            if (extracted && typeof extracted === 'object' && extracted.blocked) throw new Error('Gemini blocked: ' + (extracted.reason || 'unknown'));
+            const fullResponse = typeof extracted === 'string' ? extracted : '';
+            if (!fullResponse) throw new Error('Gemini returned empty response.');
+            return parseGamePlanFromModelOutput(fullResponse);
         }
 
         async function getAiGamePlan(clientNotes) {
