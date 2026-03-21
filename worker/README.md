@@ -1,42 +1,25 @@
 # voiceflow-proxy (Cloudflare Worker)
 
-Deploy from **this folder** (not your home directory — avoids Wrangler permission weirdness on macOS).
-
 ## One-time setup
 
-```bash
-cd "/path/to/voiceflow/worker"
-npm install
-npx wrangler login
-```
+1. **KV namespace id** — In [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages → **voiceflow-proxy** → Settings → **Variables** → find the KV binding and copy the namespace **ID**. Paste it into `wrangler.toml` instead of `REPLACE_WITH_YOUR_KV_NAMESPACE_ID`.
 
-### KV namespace
+2. **Secrets** (already set if the app worked before):
 
-If `wrangler.toml` still has `REPLACE_WITH_YOUR_KV_NAMESPACE_ID`:
+   ```bash
+   cd worker
+   npx wrangler login
+   echo "YOUR_PIN" | npx wrangler secret put ACCESS_PIN
+   echo "sk-..." | npx wrangler secret put XAI_KEY
+   echo "gsk_..." | npx wrangler secret put GROQ_KEY
+   echo "AIza..." | npx wrangler secret put GEMINI_KEY
+   ```
 
-```bash
-npx wrangler kv namespace create KV
-```
-
-Copy the id into `wrangler.toml`, or if you already have a KV for this worker, use **Workers & Pages → voiceflow-proxy → Settings → Variables → KV** and copy the namespace id.
-
-### Secrets (never commit these)
+## Deploy (adds `/gemini/` route)
 
 ```bash
-echo 'YOUR_PIN' | npx wrangler secret put ACCESS_PIN
-echo 'YOUR_XAI_KEY' | npx wrangler secret put XAI_KEY
-echo 'YOUR_GROQ_KEY' | npx wrangler secret put GROQ_KEY
-echo 'YOUR_GEMINI_KEY' | npx wrangler secret put GEMINI_KEY
-```
-
-## Deploy
-
-```bash
+cd worker
 npx wrangler deploy
 ```
 
-## Troubleshooting
-
-- **Required Worker name missing** — run `npx wrangler deploy` from the folder that contains `wrangler.toml` (this `worker/` directory).
-- **Permission error … .Trash** — don’t run Wrangler from `~`; `cd` into this project folder first.
-- **KV errors** — fix the `id` in `wrangler.toml` to match your real namespace.
+After deploy, Gemini requests to `https://voiceflow-proxy.edoardosanti.workers.dev/gemini/models/...` return JSON from Google, not 404.

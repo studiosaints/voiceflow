@@ -1,7 +1,0 @@
-{
-  "name": "voiceflow-proxy",
-  "private": true,
-  "devDependencies": {
-    "wrangler": "^4.76.0"
-  }
-}
