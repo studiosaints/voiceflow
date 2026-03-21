@@ -685,16 +685,41 @@ Write in English even if the call was in Spanish.`;
             localStorage.setItem('prep_mode', mode === 'self' ? 'self' : 'ai');
             syncPrepModeUI();
             if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) {
-                currentGamePlan = null;
                 if (getPrepMode() === 'self') {
-                    openSelfDirectedPlan();
-                    navigateTo('gameplan');
+                    showSelfDirectedView();
                 } else {
-                    renderPrepAiInstructions(parsedPrepOutput);
+                    showAiPlanView();
                 }
             }
             applyGamePlanLayoutMode();
             updateSubmitButton();
+        }
+
+        function showSelfDirectedView() {
+            document.getElementById('gameplan-empty').classList.add('hidden');
+            document.getElementById('gameplan-raw').classList.add('hidden');
+            document.getElementById('gameplan-content').classList.remove('hidden');
+            document.getElementById('gameplan-panel-title').textContent = currentGamePlan ? 'Your Game Plan' : 'Cheat sheet';
+            document.getElementById('toggle-prompt-btn').classList.add('hidden');
+            if (!currentGamePlan) {
+                document.getElementById('text-msg-section').classList.add('hidden');
+            }
+        }
+
+        function showAiPlanView() {
+            if (currentGamePlan) {
+                document.getElementById('gameplan-empty').classList.add('hidden');
+                document.getElementById('gameplan-raw').classList.add('hidden');
+                document.getElementById('gameplan-content').classList.remove('hidden');
+                document.getElementById('gameplan-panel-title').textContent = 'Your Game Plan';
+                renderGamePlanText(currentGamePlan);
+                document.getElementById('toggle-prompt-btn').classList.remove('hidden');
+                if (document.getElementById('text-msg-content').textContent.trim()) {
+                    document.getElementById('text-msg-section').classList.remove('hidden');
+                }
+            } else {
+                renderPrepAiInstructions(parsedPrepOutput);
+            }
         }
         function onPrepAiProviderChange() {
             const sel = document.getElementById('prep-ai-provider');
@@ -706,18 +731,12 @@ Write in English even if the call was in Spanish.`;
         function applyGamePlanLayoutMode() {
             const panel = document.getElementById('panel-gameplan');
             if (!panel) return;
-            const narrow = flowMode === 'outbound' && getPrepMode() === 'self' && !currentGamePlan;
-            panel.classList.toggle('self-directed', narrow);
+            const selfOnly = flowMode === 'outbound' && getPrepMode() === 'self' && !currentGamePlan;
+            panel.classList.toggle('self-directed', selfOnly);
         }
         function openSelfDirectedPlan() {
             if (flowMode !== 'outbound') return;
-            document.getElementById('gameplan-empty').classList.add('hidden');
-            document.getElementById('gameplan-raw').classList.add('hidden');
-            document.getElementById('gameplan-content').classList.remove('hidden');
-            document.getElementById('gameplan-panel-title').textContent = 'Cheat sheet';
-            document.getElementById('toggle-prompt-btn').classList.add('hidden');
-            document.getElementById('text-msg-section').classList.add('hidden');
-            document.getElementById('suggested-task-result').classList.add('hidden');
+            showSelfDirectedView();
             applyGamePlanLayoutMode();
         }
 
