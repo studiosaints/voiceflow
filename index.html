@@ -340,12 +340,18 @@
                                     </div>
                                 </div>
 
-                                <!-- RIGHT: Editable Cheat Sheet -->
+                                <!-- RIGHT: Call Questions (AI) / Cheat Sheet (self) -->
                                 <div id="gameplan-cheat-col" class="flex-1 flex flex-col min-h-0">
-                                    <div class="px-4 pt-3 pb-1 flex-shrink-0 border-b border-zinc-800/40">
+                                    <div id="gp-right-header-cheat" class="px-4 pt-3 pb-1 flex-shrink-0 border-b border-zinc-800/40">
                                         <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📒 Cheat Sheet</div>
                                     </div>
-                                    <div class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
+                                    <div id="gp-right-header-questions" class="hidden px-4 pt-3 pb-1 flex-shrink-0 border-b border-zinc-800/40">
+                                        <div class="text-[9px] uppercase tracking-widest text-amber-400 font-semibold">🎯 Call Questions</div>
+                                    </div>
+                                    <div id="gp-call-questions-wrap" class="hidden flex-1 px-4 py-3 overflow-auto transcript-scroll">
+                                        <div id="gp-call-questions" class="space-y-3 text-[12.5px] text-zinc-200 leading-relaxed"></div>
+                                    </div>
+                                    <div id="gp-cheat-sheet-wrap" class="flex-1 px-4 py-3 overflow-auto transcript-scroll relative">
                                     <div id="editable-cheat-sheet" contenteditable="true" oninput="saveCheatSheet(this)" spellcheck="false" class="space-y-1 text-[13px] text-zinc-200 leading-relaxed focus:outline-none min-h-full pb-10 caret-white">
 
                                         <div class="pb-2">
@@ -646,6 +652,7 @@ Write in English even if the call was in Spanish.`;
         let coachingLoaded = false;
         let summaryTranscriptForCoaching = null;
         let currentGamePlan = null;
+        let currentCallQuestions = null;
         let parsedPrepOutput = '';
         let isRecording = false;
         let mediaRecorder = null;
@@ -701,6 +708,7 @@ Write in English even if the call was in Spanish.`;
             document.getElementById('gameplan-content').classList.remove('hidden');
             document.getElementById('gameplan-panel-title').textContent = currentGamePlan ? 'Your Game Plan' : 'Cheat sheet';
             document.getElementById('toggle-prompt-btn').classList.add('hidden');
+            showRightColumn('cheat');
             if (!currentGamePlan) {
                 document.getElementById('text-msg-section').classList.add('hidden');
             }
@@ -714,10 +722,12 @@ Write in English even if the call was in Spanish.`;
                 document.getElementById('gameplan-panel-title').textContent = 'Your Game Plan';
                 renderGamePlanText(currentGamePlan);
                 document.getElementById('toggle-prompt-btn').classList.remove('hidden');
+                showRightColumn(currentCallQuestions ? 'questions' : 'cheat');
                 if (document.getElementById('text-msg-content').textContent.trim()) {
                     document.getElementById('text-msg-section').classList.remove('hidden');
                 }
             } else {
+                showRightColumn('cheat');
                 renderPrepAiInstructions(parsedPrepOutput);
             }
         }
@@ -1307,7 +1317,9 @@ Write in English even if the call was in Spanish.`;
             parsedPrepOutput = '';
             currentTranscript = null;
             currentGamePlan = null;
+            currentCallQuestions = null;
             hasCallTranscript = false;
+            showRightColumn('cheat');
             document.getElementById('panel-gameplan').classList.remove('self-directed');
             document.getElementById('submit-btn').disabled = true;
             swapButtonFocus(false);
@@ -1411,7 +1423,7 @@ Write in English even if the call was in Spanish.`;
 
         function parseSections(text) {
             const sections = {};
-            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS)\s*:/gim;
+            const sectionRegex = /^(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|CALL QUESTIONS)\s*:/gim;
             const keys = [];
             const positions = [];
             let m;
@@ -1453,6 +1465,45 @@ Write in English even if the call was in Spanish.`;
             html = html.replace(/(\d+)\s*open/gi, '<span class="text-emerald-400">$1 open \u{1F4CD}</span>');
             html = html.replace(/(\d+)\s*lost/gi, '<span class="text-zinc-500">$1 lost</span>');
             return html;
+        }
+
+        function renderCallQuestions(raw) {
+            const el = document.getElementById('gp-call-questions');
+            if (!el || !raw) { if (el) el.innerHTML = ''; return; }
+            const lines = raw.split('\n').map(l => l.replace(/^[\-\u2022]\s*/, '').trim()).filter(Boolean);
+            el.innerHTML = lines.map((line, i) => {
+                const labelMatch = line.match(/^([A-ZÁÉÍÓÚÑ\s\/&]+?):\s*(.*)/i);
+                if (labelMatch) {
+                    const label = escapeHtml(labelMatch[1].trim());
+                    const question = linkify(escapeHtml(labelMatch[2].trim()));
+                    return `<div class="flex items-start gap-3 ${i > 0 ? 'pt-2 border-t border-zinc-800/40' : ''}">
+                        <span class="flex-shrink-0 mt-0.5 text-[10px] uppercase tracking-wider font-bold text-amber-400/80 w-24 text-right leading-snug">${label}</span>
+                        <span class="text-zinc-200 leading-relaxed">${question}</span>
+                    </div>`;
+                }
+                return `<div class="flex items-start gap-3 ${i > 0 ? 'pt-2 border-t border-zinc-800/40' : ''}">
+                    <span class="w-2 h-2 rounded-full bg-amber-400/60 flex-shrink-0 mt-[7px]"></span>
+                    <span class="text-zinc-200 leading-relaxed">${linkify(escapeHtml(line))}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function showRightColumn(which) {
+            const cheatWrap = document.getElementById('gp-cheat-sheet-wrap');
+            const questWrap = document.getElementById('gp-call-questions-wrap');
+            const headerCheat = document.getElementById('gp-right-header-cheat');
+            const headerQuest = document.getElementById('gp-right-header-questions');
+            if (which === 'questions') {
+                if (cheatWrap) cheatWrap.classList.add('hidden');
+                if (questWrap) questWrap.classList.remove('hidden');
+                if (headerCheat) headerCheat.classList.add('hidden');
+                if (headerQuest) headerQuest.classList.remove('hidden');
+            } else {
+                if (cheatWrap) cheatWrap.classList.remove('hidden');
+                if (questWrap) questWrap.classList.add('hidden');
+                if (headerCheat) headerCheat.classList.remove('hidden');
+                if (headerQuest) headerQuest.classList.add('hidden');
+            }
         }
 
         function renderGamePlanText(text) {
@@ -1528,12 +1579,15 @@ Write in English even if the call was in Spanish.`;
                 const text = document.getElementById('crm-parsed-text')?.textContent?.trim() || currentTranscript.text;
                 const result = await getAiGamePlan(text);
                 currentGamePlan = result.gamePlan;
+                currentCallQuestions = result.callQuestions || null;
                 applyGamePlanLayoutMode();
                 document.getElementById('gameplan-empty').classList.add('hidden');
                 document.getElementById('gameplan-content').classList.remove('hidden');
                 document.getElementById('gameplan-raw').classList.add('hidden');
                 document.getElementById('gameplan-panel-title').textContent = 'Your Game Plan';
                 renderGamePlanText(result.gamePlan);
+                renderCallQuestions(currentCallQuestions);
+                showRightColumn(currentCallQuestions ? 'questions' : 'cheat');
                 document.getElementById('toggle-prompt-btn').classList.remove('hidden');
 
 
@@ -1719,6 +1773,14 @@ INTEL:
 TWO HARD QUESTIONS:
 - Output exactly 2 questions Edoardo should ask on this call to reach the goal. They must be customized to this specific account and situation. Ingenious, out-of-the-box, situation-specific. Not generic. The kind of question that uncovers pain, isolates objections, or moves the conversation forward. Prefixed with "1." and "2."
 
+CALL QUESTIONS:
+- Write 6-10 specific questions Edoardo should ask on this call, ordered by conversation flow (opening → discovery → gap → implication → close).
+- Each question must be tailored to THIS client's situation, industry, equipment, and history. No generic filler.
+- Use Hormozi / Voss / Sandler style: uncover pain, quantify cost of inaction, isolate objections, make them sell themselves.
+- Format each as a bullet starting with a short bold label and the question. e.g. "CURRENT PAIN: How many days a month is that [specific machine] sitting in the shop?"
+- Include at least one "implication" question that makes the cost of doing nothing feel real.
+- If the client speaks Spanish (per the language rule above), write half the questions in Spanish.
+
 TEXT MESSAGE:
 - Write 1-2 sentences that directly serve the OBJECTIVE above. The text should feel like a natural extension of the goal sentence — e.g. if ADVANCE is "get him to commit to coming in", the text opens that door without pitching. If NURTURE is "stay top of mind", the text adds value and curiosity. Make them want to respond. Lead with genuine curiosity, something specific from last time, or a helpful insight. Ask a question only they can answer. Never pitch, never push. Sound like a person wondering, not a rep moving a deal. (See language rule at top.) No quotes, no markdown, no sign-off. Never include a phone number or "call me at" line.
 
@@ -1732,16 +1794,19 @@ Keep the whole output practical and immediately usable.`;
             fullResponse = fullResponse.replace(/^::(?:CALL|TEXT)::\s*/im, '');
             fullResponse = fullResponse.replace(/\[\[\d+\]\]/g,'').replace(/\[(\d+)\]/g,'').replace(/\(https?:\/\/\S+?\)/g,'').replace(/\([\s,]*\)/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/\n{3,}/g,'\n\n').trim();
             let gamePlan = fullResponse;
-            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|TEXT MESSAGE)\s*:/gi;
+            const sectionHeaders = /\b(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|CALL QUESTIONS|TEXT MESSAGE)\s*:/gi;
             gamePlan = gamePlan.replace(sectionHeaders, '\n\n$1:');
-            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|TEXT MESSAGE):\s*/gi, '$1:\n');
+            gamePlan = gamePlan.replace(/(ACCOUNT SNAPSHOT|CONTEXT|OBJECTIVE|INTEL|TWO HARD QUESTIONS|CALL QUESTIONS|TEXT MESSAGE):\s*/gi, '$1:\n');
             gamePlan = gamePlan.replace(/\s+-\s+/g, '\n- ');
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();
             gamePlan = gamePlan.replace(/\n{3,}/g,'\n\n').trim();
+            let callQuestions = '';
+            const cqMatch = gamePlan.match(/\n*CALL QUESTIONS:\n?([\s\S]*?)(?=\n*TEXT MESSAGE:|$)/i);
+            if (cqMatch) { callQuestions = cqMatch[1].trim(); gamePlan = gamePlan.replace(/\n*CALL QUESTIONS:[\s\S]*?(?=\n*TEXT MESSAGE:|$)/i, '').trim(); }
             let textMessage = '';
             const tmMatch = gamePlan.match(/\n*TEXT MESSAGE:\n?([\s\S]*)$/i);
             if (tmMatch) { textMessage = tmMatch[1].replace(/^-\s*/m,'').trim(); gamePlan = gamePlan.replace(/\n*TEXT MESSAGE:[\s\S]*$/i,'').trim(); }
-            return { gamePlan, textMessage, recommended };
+            return { gamePlan, textMessage, callQuestions, recommended };
         }
 
         async function getGrokGamePlan(clientNotes) {
