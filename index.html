@@ -1742,30 +1742,68 @@ Keep the whole output practical and immediately usable.`;
             return parseGamePlanFromModelOutput(fullResponse);
         }
 
+        function parseGeminiApiError(data, status, rawText) {
+            const e = data && data.error;
+            if (e && typeof e === 'object') return e.message || e.status || '';
+            if (typeof data?.error === 'string') return data.error;
+            if (data && data.message) return data.message;
+            if (rawText && rawText.length < 400) return rawText.trim();
+            return 'HTTP ' + status;
+        }
+
+        function extractGeminiResponseText(data) {
+            if (!data) return '';
+            if (data.promptFeedback?.blockReason) {
+                return { blocked: true, reason: data.promptFeedback.blockReason };
+            }
+            const c0 = data.candidates && data.candidates[0];
+            if (c0?.content?.parts) {
+                let t = '';
+                for (const p of c0.content.parts) { if (p.text) t += p.text; }
+                return t.trim();
+            }
+            return '';
+        }
+
         async function getGeminiGamePlan(clientNotes) {
             const prompt = buildGamePlanPrompt(clientNotes);
-            const res = await fetch(XAI_PROXY + '/gemini/models/gemini-2.0-flash:generateContent', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Pin': ACCESS_PIN },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.7 }
-                })
-            });
-            if (!res.ok) {
-                const e = await res.json().catch(() => ({}));
-                const msg = e.error?.message || e.message || e.error?.status || res.statusText;
-                throw new Error(`Gemini error (${res.status}): ${msg}`);
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7 }
+            };
+            const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+            let lastDetail = '';
+            for (let i = 0; i < models.length; i++) {
+                const model = models[i];
+                const res = await fetch(XAI_PROXY + '/gemini/models/' + model + ':generateContent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Pin': ACCESS_PIN },
+                    body: JSON.stringify(payload)
+                });
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = rawText ? JSON.parse(rawText) : {};
+                } catch {
+                    throw new Error('Gemini error (' + res.status + '): proxy returned non-JSON — add a /gemini/ route + GEMINI_KEY on voiceflow-proxy (see RECIPES.md).');
+                }
+                if (!res.ok) {
+                    const msg = parseGeminiApiError(data, res.status, rawText);
+                    lastDetail = msg || res.statusText;
+                    const retry = res.status === 404 || /not found|invalid.*model|does not exist|not supported|UNKNOWN_MODEL/i.test(msg || '');
+                    if (retry && i < models.length - 1) continue;
+                    throw new Error('Gemini error (' + res.status + '): ' + (msg || res.statusText));
+                }
+                const extracted = extractGeminiResponseText(data);
+                if (extracted && typeof extracted === 'object' && extracted.blocked) {
+                    throw new Error('Gemini blocked: ' + (extracted.reason || 'unknown'));
+                }
+                const fullResponse = typeof extracted === 'string' ? extracted : '';
+                if (fullResponse) return parseGamePlanFromModelOutput(fullResponse);
+                lastDetail = 'empty response';
+                if (i < models.length - 1) continue;
             }
-            const data = await res.json();
-            let fullResponse = '';
-            const c = data.candidates && data.candidates[0];
-            if (c && c.content && c.content.parts) {
-                for (const p of c.content.parts) { if (p.text) fullResponse += p.text; }
-            }
-            fullResponse = fullResponse.trim();
-            if (!fullResponse) throw new Error('Empty response from Gemini.');
-            return parseGamePlanFromModelOutput(fullResponse);
+            throw new Error('Gemini failed: ' + (lastDetail || 'no text — check API key and model access'));
         }
 
         async function getAiGamePlan(clientNotes) {

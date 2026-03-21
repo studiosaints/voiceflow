@@ -154,12 +154,19 @@ export default {
     } else if (pathname.startsWith('/xai/')) {
       targetUrl = 'https://api.x.ai/v1/' + pathname.slice('/xai/'.length);
       auth = 'Bearer ' + env.XAI_KEY;
+    } else if (pathname.startsWith('/gemini/')) {
+      // Google AI (Gemini) uses ?key= on the URL — not Bearer. Path after /gemini/ is e.g. models/gemini-1.5-flash:generateContent
+      const path = pathname.slice('/gemini/'.length);
+      const u = new URL('https://generativelanguage.googleapis.com/v1beta/' + path);
+      u.searchParams.set('key', env.GEMINI_KEY);
+      targetUrl = u.toString();
+      auth = null;
     } else {
       return new Response('Not found', { status: 404, headers: cors });
     }
 
     const body = request.method === 'POST' ? await request.text() : undefined;
-    const headers = { 'Authorization': auth };
+    const headers = auth ? { 'Authorization': auth } : {};
     const ct = request.headers.get('Content-Type');
     if (ct) headers['Content-Type'] = ct;
 
