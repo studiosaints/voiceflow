@@ -1785,7 +1785,12 @@ Keep the whole output practical and immediately usable.`;
                 try {
                     data = rawText ? JSON.parse(rawText) : {};
                 } catch {
-                    throw new Error('Gemini error (' + res.status + '): proxy returned non-JSON — add a /gemini/ route + GEMINI_KEY on voiceflow-proxy (see RECIPES.md).');
+                    const clip = (rawText || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+                    throw new Error(
+                        'Gemini error (' + res.status + '): response was not JSON'
+                        + (clip ? ' — ' + clip : '')
+                        + '. Usually: the Worker was not redeployed with a /gemini/ handler. Deploy `worker/` (see worker/README.md) or paste `worker/index.js` in the Cloudflare dashboard.'
+                    );
                 }
                 if (!res.ok) {
                     const msg = parseGeminiApiError(data, res.status, rawText);

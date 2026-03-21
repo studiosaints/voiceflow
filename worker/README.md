@@ -1,5 +1,7 @@
 # voiceflow-proxy (Cloudflare Worker)
 
+**Gemini 404 / “non-JSON”?** The live Worker still needs the `/gemini/` code deployed — see **[DEPLOY.md](./DEPLOY.md)** (CLI or paste `index.js` in the dashboard).
+
 ## One-time setup
 
 1. **KV namespace id** — In [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages → **voiceflow-proxy** → Settings → **Variables** → find the KV binding and copy the namespace **ID**. Paste it into `wrangler.toml` instead of `REPLACE_WITH_YOUR_KV_NAMESPACE_ID`.
