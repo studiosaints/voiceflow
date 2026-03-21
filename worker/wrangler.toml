@@ -1,0 +1,10 @@
+# Must match the Worker name in Cloudflare (e.g. voiceflow-proxy.edoardosanti.workers.dev → name below)
+name = "voiceflow-proxy"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Create once: cd worker && npx wrangler kv namespace create KV
+# Paste the id Cloudflare prints:
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
