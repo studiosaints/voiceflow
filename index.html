@@ -16,6 +16,9 @@
         .mic-pulse { animation: micPulse 1.5s infinite ease-in-out; }
         @keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
         #editable-cheat-sheet, #editable-cheat-sheet *, #editable-cheat-sheet-inbound, #editable-cheat-sheet-inbound * { color: #d4d4d8 !important; background-color: transparent !important; font-size: 13px !important; }
+        #panel-gameplan.self-directed #gp-objective-wrap { display: none !important; }
+        #panel-gameplan.self-directed #gameplan-intel-col { display: none !important; }
+        #panel-gameplan.self-directed #gameplan-cheat-col { flex: 1 1 100%; width: 100%; max-width: 100%; border-left: none !important; }
         @keyframes toastIn { from{opacity:0;transform:translate(-50%,12px)} to{opacity:1;transform:translate(-50%,0)} }
         @keyframes toastOut { from{opacity:1;transform:translate(-50%,0)} to{opacity:0;transform:translate(-50%,12px)} }
         .toast-enter { animation: toastIn 0.3s ease-out forwards; }
@@ -158,6 +161,21 @@
                     <div id="valueprops-empty" class="text-[10px] text-zinc-600 text-center py-1">No props yet — add one above</div>
                 </div>
 
+                <div id="prep-mode-section" class="hidden bg-zinc-950 border border-zinc-800 rounded-2xl p-3 mb-4">
+                    <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 font-mono mb-2">CALL PREP</h3>
+                    <div class="relative inline-flex items-center bg-zinc-800/50 rounded-full p-0.5 border border-zinc-700/50 w-full mb-2">
+                        <button type="button" id="prep-mode-self" onclick="setPrepMode('self')" class="flex-1 py-1.5 text-[10px] font-bold rounded-full transition-all text-zinc-400">Cheat sheet</button>
+                        <button type="button" id="prep-mode-ai" onclick="setPrepMode('ai')" class="flex-1 py-1.5 text-[10px] font-bold rounded-full transition-all text-zinc-400">AI plan</button>
+                    </div>
+                    <div id="prep-ai-provider-wrap" class="space-y-1">
+                        <label for="prep-ai-provider" class="text-[9px] uppercase tracking-wider text-zinc-600">AI model</label>
+                        <select id="prep-ai-provider" onchange="onPrepAiProviderChange()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-[11px] text-zinc-200 focus:outline-none focus:border-purple-500/40">
+                            <option value="grok">Grok (xAI)</option>
+                            <option value="gemini">Gemini</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="flex-1"></div>
 
                 <div class="space-y-2 flex-shrink-0">
@@ -264,7 +282,7 @@
                             <!-- Two-column body -->
                             <div class="flex flex-1 min-h-0">
                                 <!-- LEFT: Account Snapshot, Intel, Quick Text -->
-                                <div class="w-[32%] border-r border-zinc-800/60 flex-shrink-0 flex flex-col min-h-0">
+                                <div id="gameplan-intel-col" class="w-[32%] border-r border-zinc-800/60 flex-shrink-0 flex flex-col min-h-0">
                                     <div class="px-4 pt-3 pb-1 flex-shrink-0">
                                         <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📋 Account Intel</div>
                                     </div>
@@ -323,7 +341,7 @@
                                 </div>
 
                                 <!-- RIGHT: Editable Cheat Sheet -->
-                                <div class="flex-1 flex flex-col min-h-0">
+                                <div id="gameplan-cheat-col" class="flex-1 flex flex-col min-h-0">
                                     <div class="px-4 pt-3 pb-1 flex-shrink-0 border-b border-zinc-800/40">
                                         <div class="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold">📒 Cheat Sheet</div>
                                     </div>
@@ -640,6 +658,69 @@ Write in English even if the call was in Spanish.`;
         let showingPromptView = false;
         let valueProps = JSON.parse(localStorage.getItem('value_props') || '[]');
 
+        function getPrepMode() {
+            return localStorage.getItem('prep_mode') === 'self' ? 'self' : 'ai';
+        }
+        function getPrepAiProvider() {
+            return localStorage.getItem('prep_ai_provider') === 'gemini' ? 'gemini' : 'grok';
+        }
+        function getPrepAiLabel() {
+            return getPrepAiProvider() === 'gemini' ? 'Gemini' : 'Grok';
+        }
+        function syncPrepModeUI() {
+            const selfActive = getPrepMode() === 'self';
+            const btnSelf = document.getElementById('prep-mode-self');
+            const btnAi = document.getElementById('prep-mode-ai');
+            const wrap = document.getElementById('prep-ai-provider-wrap');
+            const sel = document.getElementById('prep-ai-provider');
+            if (!btnSelf || !btnAi) return;
+            const on = 'flex-1 py-1.5 text-[10px] font-bold rounded-full transition-all text-white bg-purple-600';
+            const off = 'flex-1 py-1.5 text-[10px] font-bold rounded-full transition-all text-zinc-400 hover:text-zinc-200';
+            btnSelf.className = selfActive ? on : off;
+            btnAi.className = !selfActive ? on : off;
+            if (wrap) wrap.classList.toggle('hidden', selfActive);
+            if (sel) sel.value = getPrepAiProvider();
+        }
+        function setPrepMode(mode) {
+            localStorage.setItem('prep_mode', mode === 'self' ? 'self' : 'ai');
+            syncPrepModeUI();
+            if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) {
+                currentGamePlan = null;
+                if (getPrepMode() === 'self') {
+                    openSelfDirectedPlan();
+                    navigateTo('gameplan');
+                } else {
+                    renderPrepAiInstructions(parsedPrepOutput);
+                }
+            }
+            applyGamePlanLayoutMode();
+            updateSubmitButton();
+        }
+        function onPrepAiProviderChange() {
+            const sel = document.getElementById('prep-ai-provider');
+            if (sel) localStorage.setItem('prep_ai_provider', sel.value);
+            if (flowMode === 'outbound' && parsedPrepOutput && !currentGamePlan && getPrepMode() === 'ai') {
+                renderPrepAiInstructions(parsedPrepOutput);
+            }
+        }
+        function applyGamePlanLayoutMode() {
+            const panel = document.getElementById('panel-gameplan');
+            if (!panel) return;
+            const narrow = flowMode === 'outbound' && getPrepMode() === 'self' && !currentGamePlan;
+            panel.classList.toggle('self-directed', narrow);
+        }
+        function openSelfDirectedPlan() {
+            if (flowMode !== 'outbound') return;
+            document.getElementById('gameplan-empty').classList.add('hidden');
+            document.getElementById('gameplan-raw').classList.add('hidden');
+            document.getElementById('gameplan-content').classList.remove('hidden');
+            document.getElementById('gameplan-panel-title').textContent = 'Cheat sheet';
+            document.getElementById('toggle-prompt-btn').classList.add('hidden');
+            document.getElementById('text-msg-section').classList.add('hidden');
+            document.getElementById('suggested-task-result').classList.add('hidden');
+            applyGamePlanLayoutMode();
+        }
+
         // Panel navigation
         let panels = [];
         let panelIndex = 0;
@@ -666,6 +747,9 @@ Write in English even if the call was in Spanish.`;
                 { value: 'voicemail', icon: 'fa-voicemail', label: 'Left VM' }
             ]);
             applyModeTheme('outbound');
+            const prepSec = document.getElementById('prep-mode-section');
+            if (prepSec) prepSec.classList.remove('hidden');
+            syncPrepModeUI();
             updateSubmitButton();
             showPanels();
             document.getElementById('transcribe-btn').disabled = true;
@@ -687,6 +771,9 @@ Write in English even if the call was in Spanish.`;
                 { value: 'face_to_face', icon: 'fa-handshake', label: 'Walk-in' }
             ]);
             applyModeTheme('inbound');
+            const prepSec = document.getElementById('prep-mode-section');
+            if (prepSec) prepSec.classList.add('hidden');
+            document.getElementById('panel-gameplan').classList.remove('self-directed');
             updateSubmitButton();
             showPanels();
             document.getElementById('transcribe-btn').disabled = true;
@@ -736,6 +823,7 @@ Write in English even if the call was in Spanish.`;
             document.getElementById('nav-left').disabled = panelIndex <= 0;
             document.getElementById('nav-right').disabled = panelIndex >= panels.length - 1;
             renderBreadcrumbs();
+            applyGamePlanLayoutMode();
         }
 
         function navPanel(delta) {
@@ -1179,7 +1267,12 @@ Write in English even if the call was in Spanish.`;
             document.getElementById('crm-parsed').classList.remove('hidden');
             document.getElementById('crm-parsed-text').textContent = parsedPrepOutput;
             currentTranscript = { text: parsedPrepOutput, language_code: 'en' };
-            renderPrepAiInstructions(parsedPrepOutput);
+            if (getPrepMode() === 'self') {
+                openSelfDirectedPlan();
+                navigateTo('gameplan');
+            } else {
+                renderPrepAiInstructions(parsedPrepOutput);
+            }
             document.getElementById('submit-btn').disabled = false;
             updateSubmitButton();
             swapButtonFocus(true);
@@ -1196,6 +1289,7 @@ Write in English even if the call was in Spanish.`;
             currentTranscript = null;
             currentGamePlan = null;
             hasCallTranscript = false;
+            document.getElementById('panel-gameplan').classList.remove('self-directed');
             document.getElementById('submit-btn').disabled = true;
             swapButtonFocus(false);
             updateSubmitButton();
@@ -1245,8 +1339,13 @@ Write in English even if the call was in Spanish.`;
             const text = document.getElementById('submit-btn-text');
             if (!icon || !text) return;
             if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) {
-                icon.className = 'fas fa-chess';
-                text.textContent = currentGamePlan ? 'REGENERATE PLAN' : 'GENERATE GAME PLAN';
+                if (getPrepMode() === 'self') {
+                    icon.className = 'fas fa-scroll';
+                    text.textContent = 'OPEN CHEAT SHEET';
+                } else {
+                    icon.className = 'fas fa-chess';
+                    text.textContent = currentGamePlan ? 'REGENERATE PLAN' : 'GENERATE GAME PLAN';
+                }
             } else {
                 icon.className = 'fas fa-robot';
                 text.textContent = 'SUMMARIZE FOR CRM';
@@ -1269,8 +1368,15 @@ Write in English even if the call was in Spanish.`;
         }
 
         function submitAction() {
-            if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) generateGamePlan();
-            else startSummary();
+            if (flowMode === 'outbound' && parsedPrepOutput && !hasCallTranscript) {
+                if (getPrepMode() === 'self') {
+                    openSelfDirectedPlan();
+                    navigateTo('gameplan');
+                    showToast('Cheat sheet');
+                } else {
+                    generateGamePlan();
+                }
+            } else startSummary();
         }
 
         // ═══ GAME PLAN ═══
@@ -1401,8 +1507,9 @@ Write in English even if the call was in Spanish.`;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>GENERATING...';
             try {
                 const text = document.getElementById('crm-parsed-text')?.textContent?.trim() || currentTranscript.text;
-                const result = await getGrokGamePlan(text);
+                const result = await getAiGamePlan(text);
                 currentGamePlan = result.gamePlan;
+                applyGamePlanLayoutMode();
                 document.getElementById('gameplan-empty').classList.add('hidden');
                 document.getElementById('gameplan-content').classList.remove('hidden');
                 document.getElementById('gameplan-raw').classList.add('hidden');
@@ -1424,7 +1531,8 @@ Write in English even if the call was in Spanish.`;
                     }
                 } else { document.getElementById('text-msg-section').classList.add('hidden'); }
                 navigateTo('gameplan');
-                showToast(result.recommended === 'text' ? 'Grok says: just text this one' : 'Grok says: call this one');
+                const who = getPrepAiLabel();
+                showToast(result.recommended === 'text' ? `${who}: favor a text touchpoint` : `${who}: worth a live call`);
                 updateSubmitButton();
             } catch (err) {
                 console.error('Game plan error:', err);
@@ -1441,7 +1549,7 @@ Write in English even if the call was in Spanish.`;
             document.getElementById('gameplan-empty').classList.add('hidden');
             document.getElementById('gameplan-content').classList.add('hidden');
             document.getElementById('gameplan-raw').classList.remove('hidden');
-            document.getElementById('gameplan-panel-title').textContent = 'What Grok Will See';
+            document.getElementById('gameplan-panel-title').textContent = 'What ' + getPrepAiLabel() + ' will see';
             document.getElementById('gameplan-text').textContent = buildGamePlanPrompt(clientNotes);
             document.getElementById('toggle-prompt-btn').classList.add('hidden');
             document.getElementById('text-msg-section').classList.add('hidden');
@@ -1455,7 +1563,7 @@ Write in English even if the call was in Spanish.`;
                 document.getElementById('gameplan-content').classList.add('hidden');
                 document.getElementById('gameplan-raw').classList.remove('hidden');
                 document.getElementById('gameplan-text').textContent = buildGamePlanPrompt(parsedPrepOutput);
-                document.getElementById('gameplan-panel-title').textContent = 'What Grok Was Fed';
+                document.getElementById('gameplan-panel-title').textContent = 'What ' + getPrepAiLabel() + ' was fed';
                 btn.innerHTML = '<i class="fas fa-chess mr-1"></i>Back to plan';
             } else {
                 document.getElementById('gameplan-raw').classList.add('hidden');
@@ -1598,20 +1706,7 @@ TEXT MESSAGE:
 Keep the whole output practical and immediately usable.`;
         }
 
-        async function getGrokGamePlan(clientNotes) {
-            const prompt = buildGamePlanPrompt(clientNotes);
-            const res = await fetch(XAI_PROXY + '/xai/responses', {
-                method: 'POST',
-                headers: { 'Content-Type':'application/json', 'X-Pin': ACCESS_PIN },
-                body: JSON.stringify({ model:'grok-4-1-fast-reasoning', input:[{role:'user',content:prompt}], tools:[{type:'web_search'}], temperature:0.7, store:false })
-            });
-            if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(`xAI error (${res.status}): ${e.error?.message || res.statusText}`); }
-            const data = await res.json();
-            let fullResponse = '';
-            if (data.output) { for (const item of data.output) { if (item.type==='message'&&item.content) { for (const block of item.content) { if (block.type==='output_text') fullResponse += block.text; } } } }
-            if (!fullResponse) { fullResponse = data.output_text || (typeof data.output==='string' ? data.output : ''); }
-            fullResponse = fullResponse.trim();
-            if (!fullResponse) throw new Error('Empty response from xAI.');
+        function parseGamePlanFromModelOutput(fullResponse) {
             let recommended = 'call';
             const signalMatch = fullResponse.match(/^::(CALL|TEXT)::/im);
             if (signalMatch) recommended = signalMatch[1].toLowerCase();
@@ -1628,6 +1723,53 @@ Keep the whole output practical and immediately usable.`;
             const tmMatch = gamePlan.match(/\n*TEXT MESSAGE:\n?([\s\S]*)$/i);
             if (tmMatch) { textMessage = tmMatch[1].replace(/^-\s*/m,'').trim(); gamePlan = gamePlan.replace(/\n*TEXT MESSAGE:[\s\S]*$/i,'').trim(); }
             return { gamePlan, textMessage, recommended };
+        }
+
+        async function getGrokGamePlan(clientNotes) {
+            const prompt = buildGamePlanPrompt(clientNotes);
+            const res = await fetch(XAI_PROXY + '/xai/responses', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'X-Pin': ACCESS_PIN },
+                body: JSON.stringify({ model:'grok-4-1-fast-reasoning', input:[{role:'user',content:prompt}], tools:[{type:'web_search'}], temperature:0.7, store:false })
+            });
+            if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(`xAI error (${res.status}): ${e.error?.message || res.statusText}`); }
+            const data = await res.json();
+            let fullResponse = '';
+            if (data.output) { for (const item of data.output) { if (item.type==='message'&&item.content) { for (const block of item.content) { if (block.type==='output_text') fullResponse += block.text; } } } }
+            if (!fullResponse) { fullResponse = data.output_text || (typeof data.output==='string' ? data.output : ''); }
+            fullResponse = fullResponse.trim();
+            if (!fullResponse) throw new Error('Empty response from xAI.');
+            return parseGamePlanFromModelOutput(fullResponse);
+        }
+
+        async function getGeminiGamePlan(clientNotes) {
+            const prompt = buildGamePlanPrompt(clientNotes);
+            const res = await fetch(XAI_PROXY + '/gemini/models/gemini-2.0-flash:generateContent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Pin': ACCESS_PIN },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.7 }
+                })
+            });
+            if (!res.ok) {
+                const e = await res.json().catch(() => ({}));
+                const msg = e.error?.message || e.message || e.error?.status || res.statusText;
+                throw new Error(`Gemini error (${res.status}): ${msg}`);
+            }
+            const data = await res.json();
+            let fullResponse = '';
+            const c = data.candidates && data.candidates[0];
+            if (c && c.content && c.content.parts) {
+                for (const p of c.content.parts) { if (p.text) fullResponse += p.text; }
+            }
+            fullResponse = fullResponse.trim();
+            if (!fullResponse) throw new Error('Empty response from Gemini.');
+            return parseGamePlanFromModelOutput(fullResponse);
+        }
+
+        async function getAiGamePlan(clientNotes) {
+            return getPrepAiProvider() === 'gemini' ? getGeminiGamePlan(clientNotes) : getGrokGamePlan(clientNotes);
         }
 
         let syncTimeout = null;
@@ -1935,7 +2077,8 @@ Output ONLY the next task for Salesforce — 3 to 8 words. Example: "Follow up o
             document.getElementById('summary-prompt').value = DEFAULT_PROMPT;
             localStorage.setItem('summary_prompt', DEFAULT_PROMPT);
             renderValueProps();
-            
+            syncPrepModeUI();
+
             // Fast local load — strip any broken inline styles from old saves
             let savedSheet = localStorage.getItem('custom_cheat_sheet');
             if (savedSheet) {

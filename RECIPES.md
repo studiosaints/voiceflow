@@ -194,6 +194,8 @@ npx wrangler deploy                             # deploy Worker
 echo "your-pin"    | npx wrangler secret put ACCESS_PIN
 echo "sk-xai-..." | npx wrangler secret put XAI_KEY
 echo "gsk_..."    | npx wrangler secret put GROQ_KEY
+# Optional — game-plan “Gemini” option in the app hits `/gemini/...` on this worker:
+# echo "AIza..." | npx wrangler secret put GEMINI_KEY
 ```
 
 ### Adding a new API
